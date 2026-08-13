@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `isAuthorizedOfficer` boolean DEFAULT false NOT NULL;

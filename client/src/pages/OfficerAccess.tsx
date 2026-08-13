@@ -1,0 +1,14 @@
+import { PageHeading } from "@/components/PageHeading";
+import { StatusPill } from "@/components/StatusPill";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { ShieldCheck, UserRoundCheck, UserRoundX } from "lucide-react";
+
+export default function OfficerAccess() {
+  const directory = trpc.meeting.officerDirectory.useQuery();
+  const utils = trpc.useUtils();
+  const setAccess = trpc.meeting.setOfficerAccess.useMutation({ onSuccess: () => utils.meeting.officerDirectory.invalidate() });
+  return <div className="mx-auto max-w-6xl"><PageHeading eyebrow="Administrator control" title="Officer access directory" description="Meeting-tracker access is blocked unless a signed-in account has been explicitly authorised as an ISEYC officer. Administrative accounts are initially authorised; all other accounts require a recorded decision here." />
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_-45px_rgba(15,23,42,.45)]"><div className="flex items-center gap-3 border-b border-slate-100 pb-5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><ShieldCheck className="h-4 w-4" /></span><div><h2 className="font-serif text-xl text-slate-900">Signed-in account directory</h2><p className="text-xs text-slate-500">An officer must sign in once before an administrator can grant access.</p></div></div>{directory.isLoading ? <p className="p-8 text-sm text-slate-500">Loading authorised-officer directory…</p> : <div className="divide-y divide-slate-100">{directory.data?.map(account => <div key={account.id} className="grid gap-4 py-5 sm:grid-cols-[minmax(0,1fr)_130px_150px]"><div><p className="font-medium text-slate-900">{account.name || "Name not recorded"}</p><p className="mt-1 text-sm text-slate-500">{account.email || "Email not recorded"}</p><p className="mt-1 text-xs text-slate-400">Last sign-in: {new Date(account.lastSignedIn).toLocaleString()}</p></div><div><p className="text-xs font-bold uppercase tracking-[.12em] text-slate-400">System role</p><p className="mt-1 text-sm text-slate-700">{account.role}</p></div><div className="flex items-center justify-between gap-3"><StatusPill status={account.isAuthorizedOfficer ? "confirmed" : "blocked"} /><Button size="sm" variant={account.isAuthorizedOfficer ? "outline" : "default"} className={account.isAuthorizedOfficer ? "border-rose-200 text-rose-700 hover:bg-rose-50" : "bg-emerald-400 text-slate-950 hover:bg-emerald-300"} disabled={setAccess.isPending} onClick={() => setAccess.mutate({ targetUserId: account.id, authorised: !account.isAuthorizedOfficer })}>{account.isAuthorizedOfficer ? <><UserRoundX className="mr-1.5 h-3.5 w-3.5" />Withdraw</> : <><UserRoundCheck className="mr-1.5 h-3.5 w-3.5" />Authorise</>}</Button></div></div>)}</div>}</section>
+  </div>;
+}

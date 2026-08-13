@@ -60,6 +60,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.role = 'admin';
     }
 
+    if (user.isAuthorizedOfficer !== undefined) {
+      values.isAuthorizedOfficer = user.isAuthorizedOfficer;
+      updateSet.isAuthorizedOfficer = user.isAuthorizedOfficer;
+    } else if (user.openId === ENV.ownerOpenId) {
+      values.isAuthorizedOfficer = true;
+      updateSet.isAuthorizedOfficer = true;
+    }
+
     if (!values.lastSignedIn) {
       values.lastSignedIn = new Date();
     }

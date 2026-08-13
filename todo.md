@@ -1,0 +1,23 @@
+# Project TODO
+
+- [x] Define controlled meeting-submission, draft-record, section-review, action-item, and audit data models.
+- [x] Enforce authenticated access and authorised officer roles across all record, action, and approval operations.
+- [x] Build secure meeting-material intake with metadata capture, source file references, sensitivity labels, and submitting-officer attribution.
+- [x] Store uploaded meeting documents outside the database and retain only controlled metadata and storage references.
+- [x] Preserve the supplied ISEYC Meeting & Decision Tracker system prompt as the authoritative AI instruction with no substitutions.
+- [x] Implement an isolated draft-only AI processing pipeline for meeting materials.
+- [x] Implement a 10–15 minute consolidation window that groups related files without duplicating live records.
+- [x] Implement a scheduled fallback scan for eligible but unprocessed submissions.
+- [x] Prevent any automated record approval, action assignment, action closure, or authoritative-status change.
+- [x] Build an intake queue for pending consolidation, processing, draft ready, under review, approved, needs human review, and blocked states.
+- [x] Build a structured record-review interface with section-level approve, revision-request, and reject controls.
+- [x] Build a read-only action tracker linked only to approved meeting records, with per-item human confirmation gates.
+- [x] Build a fully isolated sample-material test mode with no live-record cross-contamination.
+- [x] Create a refined, accessible institutional interface for dashboard, intake, queue, review, actions, and test mode.
+- [x] Add immutable audit entries for submission, processing, review, approval, rejection, and test-mode actions.
+- [x] Write Vitest coverage for consolidation eligibility, status transitions, test-mode isolation, and human-approval safeguards.
+- [x] Verify database migration, application type checks, automated tests, desktop workflow, and mobile layout.
+- [x] Enforce explicit authorised-officer membership at all tracker API routes and in the application access gate.
+- [x] Add controlled submission-status transition guards used by the processing, review, and approval service, with Vitest coverage.
+- [ ] Activate the scheduled fallback control after the first published deployment, using the administrator-only configuration action.
+- [x] Save a final project checkpoint after all completed tasks are marked accurately.
