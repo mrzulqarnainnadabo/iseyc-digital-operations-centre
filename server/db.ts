@@ -68,6 +68,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.isAuthorizedOfficer = true;
     }
 
+    if (user.docRole !== undefined) {
+      values.docRole = user.docRole;
+      updateSet.docRole = user.docRole;
+    } else if (user.openId === ENV.ownerOpenId) {
+      values.docRole = "national_president";
+      updateSet.docRole = "national_president";
+    }
+
     if (!values.lastSignedIn) {
       values.lastSignedIn = new Date();
     }

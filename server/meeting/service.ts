@@ -329,7 +329,7 @@ export async function fallbackScheduleMetadata() {
 
 export async function listOfficerDirectory() {
   const db = await requireDb();
-  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, isAuthorizedOfficer: users.isAuthorizedOfficer, lastSignedIn: users.lastSignedIn }).from(users).orderBy(desc(users.lastSignedIn));
+  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, docRole: users.docRole, isAuthorizedOfficer: users.isAuthorizedOfficer, lastSignedIn: users.lastSignedIn }).from(users).orderBy(desc(users.lastSignedIn));
 }
 
 export async function setOfficerAccess(input: { targetUserId: number; authorised: boolean; actorUserId: number }) {
@@ -338,4 +338,12 @@ export async function setOfficerAccess(input: { targetUserId: number; authorised
   if (!target) throw new Error("Officer account not found.");
   if (target.id === input.actorUserId && !input.authorised) throw new Error("An administrator cannot remove their own officer access.");
   await db.update(users).set({ isAuthorizedOfficer: input.authorised }).where(eq(users.id, input.targetUserId));
+}
+
+export async function setDocRole(input: { targetUserId: number; docRole: "member" | "officer" | "administrator" | "presidential_council" | "national_president"; actorUserId: number }) {
+  const db = await requireDb();
+  const target = (await db.select().from(users).where(eq(users.id, input.targetUserId)).limit(1))[0];
+  if (!target) throw new Error("Officer account not found.");
+  if (target.id === input.actorUserId && input.docRole === "member") throw new Error("An administrator cannot remove their own Digital Operations Centre role.");
+  await db.update(users).set({ docRole: input.docRole }).where(eq(users.id, input.targetUserId));
 }

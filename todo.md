@@ -21,3 +21,17 @@
 - [x] Add controlled submission-status transition guards used by the processing, review, and approval service, with Vitest coverage.
 - [ ] Activate the scheduled fallback control after the first published deployment, using the administrator-only configuration action.
 - [x] Save a final project checkpoint after all completed tasks are marked accurately.
+- [x] Review the supplied Digital Operations Centre direction and resolve any conflict with existing ISEYC safeguards before implementation.
+- [x] Rebrand the published application as the ISEYC Digital Operations Centre and remove visible platform branding from the application experience.
+- [x] Create the top-level Presidential Command Brief module with a decision-only executive workspace and draft-only operating controls.
+- [x] Retain the Meeting & Decision Tracker as Module 2 with all existing officer, approval, action, audit, and test-isolation safeguards intact.
+- [x] Create the governed Social Media & Content Command workspace as Module 3, with draft-only content production and mandatory human approval before publication.
+- [x] Implement the Digital Operations Centre navigation and information architecture across all modules.
+- [x] Store the authoritative Presidential Command Brief and Media AI Agent system prompts as versioned institutional instructions.
+- [x] Add controlled sample-content testing that remains separate from live meeting records and does not publish content.
+- [x] Add Vitest coverage for new DOC safeguards, module access, content draft-only status, and publication prevention.
+- [x] Verify the upgraded Digital Operations Centre on desktop and mobile, then save a review checkpoint.
+- [x] Add service-level DOC tests for controlled Command Brief and Media AI Agent lifecycle safeguards, including test/live isolation and publication prevention.
+- [ ] Save a post-upgrade review checkpoint and verify the published Digital Operations Centre branding on the production domain.
+- [x] Add mocked DOC service-flow tests for Command Brief and Media AI Agent test-only blocking, lifecycle persistence, live/test queue isolation, and publicationPerformed enforcement.
+- [x] Add mocked DOC queue-isolation tests that assert separate live and test query filtering before final review.

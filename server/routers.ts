@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { officerAdminProcedure, officerProcedure, publicProcedure, router } from "./_core/trpc";
+import { officerAdminProcedure, officerProcedure, presidentialProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { createHeartbeatJob } from "./_core/heartbeat";
 import { parse as parseCookie } from "cookie";
@@ -17,9 +17,11 @@ import {
   recordSectionReview,
   listOfficerDirectory,
   setOfficerAccess,
+  setDocRole,
   storeSubmission,
   updateFallbackSchedule,
 } from "./meeting/service";
+import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 
 const sensitivitySchema = z.enum(["public", "internal", "confidential", "restricted", "not_recorded"]);
 const documentTypeSchema = z.enum(["agenda", "minutes", "notes", "transcript", "decision_log", "action_list", "other"]);
@@ -111,6 +113,23 @@ export const appRouter = router({
     setOfficerAccess: officerAdminProcedure.input(z.object({ targetUserId: z.number().int().positive(), authorised: z.boolean() })).mutation(({ ctx, input }) =>
       setOfficerAccess({ ...input, actorUserId: ctx.user.id }),
     ),
+    setDocRole: officerAdminProcedure.input(z.object({ targetUserId: z.number().int().positive(), docRole: z.enum(["member", "officer", "administrator", "presidential_council", "national_president"]) })).mutation(({ ctx, input }) =>
+      setDocRole({ ...input, actorUserId: ctx.user.id }),
+    ),
+  }),
+  doc: router({
+    overview: officerProcedure.query(() => getDocOverview()),
+    commandBriefs: presidentialProcedure.input(z.object({ isTestMode: z.boolean().default(false) })).query(({ input }) => getCommandBriefs(input.isTestMode)),
+    commandBrief: presidentialProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getCommandBrief(input.id)),
+    createCommandBrief: presidentialProcedure.input(z.object({ coverageStart: z.date(), coverageEnd: z.date(), sourceSummary: z.string().min(20).max(120000), isTestMode: z.boolean().default(false) })).mutation(({ ctx, input }) => createCommandBrief({ ...input, actorUserId: ctx.user.id })),
+    generateCommandBrief: presidentialProcedure.input(z.object({ id: z.number().int().positive(), testOnly: z.boolean().optional() })).mutation(({ ctx, input }) => generateCommandBrief(input.id, { actorUserId: ctx.user.id, testOnly: input.testOnly })),
+    reviewCommandBrief: officerAdminProcedure.input(z.object({ id: z.number().int().positive(), decision: z.enum(["under_review", "approved_for_internal_use", "withheld_for_review"]), note: z.string().max(5000).optional() })).mutation(({ ctx, input }) => reviewCommandBrief(input.id, ctx.user.id, input.decision, input.note)),
+    contentQueue: officerProcedure.input(z.object({ isTestMode: z.boolean().default(false) })).query(({ ctx, input }) => getContentQueue({ id: ctx.user.id, role: ctx.user.role }, input.isTestMode)),
+    contentDraft: officerProcedure.input(z.object({ id: z.number().int().positive() })).query(({ ctx, input }) => getContentDraft(input.id, { id: ctx.user.id, role: ctx.user.role })),
+    createContentDraft: officerProcedure.input(z.object({ title: z.string().min(3).max(512), requestType: z.enum(["platform_draft", "response_suggestion", "outreach_research", "calendar_item", "internal_brief"]), objective: z.string().min(10).max(5000), intendedAudience: z.string().min(2).max(255), channels: z.array(z.string().min(1)).min(1).max(5), sourceReference: z.string().min(3).max(5000), sourceMaterial: z.string().min(20).max(120000), sourceApprovalStatus: z.enum(["approved_external", "approved_internal", "pending_confirmation", "restricted"]), sensitivity: z.enum(["public", "internal", "confidential", "restricted"]), targetDate: z.date().optional(), isTestMode: z.boolean().default(false) })).mutation(({ ctx, input }) => createContentDraft({ ...input, actorUserId: ctx.user.id })),
+    generateContentDraft: officerProcedure.input(z.object({ id: z.number().int().positive(), testOnly: z.boolean().optional() })).mutation(({ ctx, input }) => generateContentDraft(input.id, { actorUserId: ctx.user.id, testOnly: input.testOnly })),
+    reviewContentDraft: officerAdminProcedure.input(z.object({ id: z.number().int().positive(), decision: z.enum(["revision_requested", "approved_for_publication", "withheld_for_governance_review"]) })).mutation(({ ctx, input }) => reviewContentDraft(input.id, ctx.user.id, input.decision)),
+    loadSampleContent: officerProcedure.mutation(({ ctx }) => loadSampleContent(ctx.user.id)),
   }),
 });
 

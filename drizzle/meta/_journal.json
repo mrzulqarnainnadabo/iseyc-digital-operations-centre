@@ -22,6 +22,20 @@
       "when": 1786661463085,
       "tag": "0002_bouncy_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786834128374,
+      "tag": "0003_next_paper_doll",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786834204075,
+      "tag": "0004_mysterious_santa_claus",
+      "breakpoints": true
     }
   ]
 }
