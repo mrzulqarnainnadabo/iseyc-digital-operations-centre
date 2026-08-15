@@ -327,6 +327,11 @@ export async function fallbackScheduleMetadata() {
   return { path: "/api/scheduled/meeting-fallback", cron: settings.fallbackCronExpression, taskUid: settings.fallbackCronTaskUid, enabled: settings.fallbackEnabled };
 }
 
+export async function isRegisteredFallbackTask(taskUid: string) {
+  const settings = await getSettings();
+  return settings.fallbackEnabled && settings.fallbackCronTaskUid === taskUid;
+}
+
 export async function listOfficerDirectory() {
   const db = await requireDb();
   return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, docRole: users.docRole, isAuthorizedOfficer: users.isAuthorizedOfficer, lastSignedIn: users.lastSignedIn }).from(users).orderBy(desc(users.lastSignedIn));

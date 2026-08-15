@@ -35,3 +35,4 @@
 - [ ] Save a post-upgrade review checkpoint and verify the published Digital Operations Centre branding on the production domain.
 - [x] Add mocked DOC service-flow tests for Command Brief and Media AI Agent test-only blocking, lifecycle persistence, live/test queue isolation, and publicationPerformed enforcement.
 - [x] Add mocked DOC queue-isolation tests that assert separate live and test query filtering before final review.
+- [x] Bind the scheduled meeting fallback handler to its persisted task identity before activating the 15-minute heartbeat.

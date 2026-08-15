@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { sdk } from "./sdk";
-import { processDueSubmissions } from "../meeting/service";
+import { isRegisteredFallbackTask, processDueSubmissions } from "../meeting/service";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +42,7 @@ async function startServer() {
     try {
       const user = await sdk.authenticateRequest(req);
       if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
+      if (!(await isRegisteredFallbackTask(user.taskUid))) return res.json({ ok: true, skipped: "orphan_or_unregistered_task" });
       const outcomes = await processDueSubmissions();
       return res.json({ ok: true, processed: outcomes.length, outcomes });
     } catch (error) {
