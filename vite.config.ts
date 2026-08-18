@@ -4,7 +4,6 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -13,6 +12,7 @@ import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
+const MANUS_RUNTIME_SOURCE_PATH = path.join(PROJECT_ROOT, "node_modules", ".pnpm", "vite-plugin-manus-runtime@0.0.59", "node_modules", "vite-plugin-manus-runtime", "runtime_dist", "manus-runtime.js");
 const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
 const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6); // Trim to 60% to avoid constant re-trimming
 
@@ -150,7 +150,34 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function vitePluginExternalManusRuntime(): Plugin {
+  const runtimePath = "/__manus__/runtime.js";
+  const runtimeSource = () => fs.readFileSync(MANUS_RUNTIME_SOURCE_PATH, "utf-8");
+  return {
+    name: "ise yc-external-manus-runtime".replace(" ", ""),
+    enforce: "post",
+    transformIndexHtml(_html, context) {
+      const isHostDev = context.server !== undefined;
+      return [
+        { tag: "script", children: `window.__MANUS_HOST_DEV__ = ${isHostDev};`, injectTo: "body-prepend" },
+        { tag: "script", attrs: { id: "manus-runtime", src: runtimePath }, injectTo: "body-prepend" },
+      ];
+    },
+    configureServer(server) {
+      server.middlewares.use(runtimePath, (_req, res) => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        res.end(runtimeSource());
+      });
+    },
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "__manus__/runtime.js", source: runtimeSource() });
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginExternalManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
   plugins,
