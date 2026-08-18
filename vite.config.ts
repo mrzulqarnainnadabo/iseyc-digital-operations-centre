@@ -151,7 +151,7 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 function vitePluginExternalManusRuntime(): Plugin {
-  const runtimePath = "/__manus__/runtime.js";
+  const runtimePath = "/assets/manus-runtime.js";
   const runtimeSource = () => fs.readFileSync(MANUS_RUNTIME_SOURCE_PATH, "utf-8");
   return {
     name: "ise yc-external-manus-runtime".replace(" ", ""),
@@ -172,7 +172,7 @@ function vitePluginExternalManusRuntime(): Plugin {
       });
     },
     generateBundle() {
-      this.emitFile({ type: "asset", fileName: "__manus__/runtime.js", source: runtimeSource() });
+      this.emitFile({ type: "asset", fileName: "assets/manus-runtime.js", source: runtimeSource() });
     },
   };
 }
