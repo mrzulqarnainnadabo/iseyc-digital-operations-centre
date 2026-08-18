@@ -22,7 +22,7 @@ import {
   updateFallbackSchedule,
 } from "./meeting/service";
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
-import { approveMentorship, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
+import { approveMentorship, confirmCommunityAffiliation, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
 import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
 
 const sensitivitySchema = z.enum(["public", "internal", "confidential", "restricted", "not_recorded"]);
@@ -65,6 +65,7 @@ export const appRouter = router({
     submitParticipation: protectedProcedure.input(z.object({ participationType: z.enum(["meeting_contribution", "community_contribution", "development_reflection", "department_activity"]), title: z.string().min(3).max(255), detail: z.string().max(5000).optional() })).mutation(({ ctx, input }) => submitParticipation({ ...input, userId: ctx.user.id })),
     confirmParticipation: officerAdminProcedure.input(z.object({ userId: z.number().int().positive(), participationType: z.enum(["meeting_contribution", "community_contribution", "development_reflection", "department_activity"]), title: z.string().min(3).max(255), detail: z.string().max(5000).optional(), sourceRecordId: z.number().int().positive().optional() })).mutation(({ ctx, input }) => confirmParticipation({ ...input, confirmedByUserId: ctx.user.id })),
     confirmParticipationRecord: officerAdminProcedure.input(z.object({ participationId: z.number().int().positive() })).mutation(({ ctx, input }) => confirmParticipationRecord({ ...input, confirmedByUserId: ctx.user.id })),
+    confirmCommunityAffiliation: officerAdminProcedure.input(z.object({ affiliationId: z.number().int().positive() }).strict()).mutation(({ ctx, input }) => confirmCommunityAffiliation({ ...input, confirmedByUserId: ctx.user.id })),
     governanceQueue: officerAdminProcedure.query(() => getDevelopmentGovernanceQueue()),
     approveMentorship: officerAdminProcedure.input(z.object({ relationshipId: z.number().int().positive(), mentorUserId: z.number().int().positive(), agreedFocus: z.string().max(5000).optional() })).mutation(({ ctx, input }) => approveMentorship({ ...input, approvedByUserId: ctx.user.id })),
     nationalPresidentAccess: nationalPresidentProcedure.query(({ ctx }) => verifyNationalPresidentAccess(ctx.user.id, ctx.user.docRole)),

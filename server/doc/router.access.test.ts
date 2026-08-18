@@ -46,6 +46,7 @@ describe("DOC router access controls", () => {
     const caller = appRouter.createCaller(contextFor(user({ role: "user", docRole: "member", isAuthorizedOfficer: false })));
     await expect(caller.development.confirmParticipation({ userId: 14, participationType: "community_contribution", title: "Attempted confirmation" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.development.confirmParticipationRecord({ participationId: 13 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.development.confirmCommunityAffiliation({ affiliationId: 41 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.development.approveMentorship({ relationshipId: 21, mentorUserId: 8 })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 

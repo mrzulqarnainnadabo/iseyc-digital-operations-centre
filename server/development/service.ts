@@ -148,14 +148,27 @@ export async function confirmParticipationRecord(input: { participationId: numbe
   await db.update(developmentParticipationRecords).set({ confirmedByUserId: input.confirmedByUserId, confirmedAt: new Date() }).where(eq(developmentParticipationRecords.id, input.participationId));
 }
 
+export async function confirmCommunityAffiliation(input: { affiliationId: number; confirmedByUserId: number }) {
+  const db = await requireDb();
+  const affiliation = (await db.select().from(memberCommunityAffiliations).where(eq(memberCommunityAffiliations.id, input.affiliationId)).limit(1))[0];
+  if (!affiliation || affiliation.affiliationStatus !== "self_declared") throw new Error("Only an active self-declared community affiliation can be confirmed.");
+  const profile = (await db.select().from(developmentalProfiles).where(eq(developmentalProfiles.userId, affiliation.userId)).limit(1))[0];
+  if (!profile || profile.consentStatus !== "active") throw new Error("The member's developmental consent must be active before affiliation confirmation.");
+  const tier = (await db.select().from(communityTiers).where(and(eq(communityTiers.id, affiliation.tierId), eq(communityTiers.isActive, true))).limit(1))[0];
+  if (!tier) throw new Error("The selected grassroots tier is not available for confirmation.");
+  assertApprovedTopologySelection({ tiers: [tier], pillars: [], tierId: affiliation.tierId, pillarIds: [] });
+  await db.update(memberCommunityAffiliations).set({ affiliationStatus: "confirmed", confirmedByUserId: input.confirmedByUserId, confirmedAt: new Date() }).where(eq(memberCommunityAffiliations.id, input.affiliationId));
+}
+
 export async function getDevelopmentGovernanceQueue() {
   const db = await requireDb();
-  const [pendingParticipation, mentorshipRequests, mentorCandidates] = await Promise.all([
+  const [pendingParticipation, mentorshipRequests, selfDeclaredAffiliations, mentorCandidates] = await Promise.all([
     db.select({ record: developmentParticipationRecords, member: { id: users.id, name: users.name, email: users.email } }).from(developmentParticipationRecords).leftJoin(users, eq(developmentParticipationRecords.userId, users.id)).where(isNull(developmentParticipationRecords.confirmedAt)).orderBy(desc(developmentParticipationRecords.createdAt)),
     db.select({ relationship: mentorshipRelationships, member: { id: users.id, name: users.name, email: users.email } }).from(mentorshipRelationships).leftJoin(users, eq(mentorshipRelationships.menteeUserId, users.id)).where(eq(mentorshipRelationships.status, "requested")).orderBy(desc(mentorshipRelationships.createdAt)),
+    db.select({ affiliation: memberCommunityAffiliations, member: { id: users.id, name: users.name, email: users.email }, tier: { id: communityTiers.id, name: communityTiers.name } }).from(memberCommunityAffiliations).leftJoin(users, eq(memberCommunityAffiliations.userId, users.id)).leftJoin(communityTiers, eq(memberCommunityAffiliations.tierId, communityTiers.id)).innerJoin(developmentalProfiles, eq(memberCommunityAffiliations.userId, developmentalProfiles.userId)).where(and(eq(memberCommunityAffiliations.affiliationStatus, "self_declared"), eq(developmentalProfiles.consentStatus, "active"))).orderBy(desc(memberCommunityAffiliations.createdAt)),
     db.select({ id: users.id, name: users.name, email: users.email, docRole: users.docRole }).from(users).where(and(eq(users.isAuthorizedOfficer, true), or(eq(users.docRole, "officer"), eq(users.docRole, "administrator"), eq(users.docRole, "presidential_council"), eq(users.docRole, "national_president")))).orderBy(asc(users.name)),
   ]);
-  return { pendingParticipation, mentorshipRequests, mentorCandidates };
+  return { pendingParticipation, mentorshipRequests, selfDeclaredAffiliations, mentorCandidates };
 }
 
 export async function approveMentorship(input: { relationshipId: number; mentorUserId: number; approvedByUserId: number; agreedFocus?: string }) {

@@ -17,3 +17,9 @@ The production browser session was then inspected directly. It remained in `docu
 ## Digital Chamber review — 18 August 2026
 
 The Chamber register was verified at desktop and mobile widths. A controlled test-only Chamber session was created through the governed service flow and verified at desktop and mobile widths. The session room displayed the test boundary, role-sourced Chair identity, agenda, protected document desk, draft-only tracker handoff, participant roster, and audit record. No source document was uploaded and no tracker handoff or approval action was executed during visual review.
+
+## Community-affiliation governance review — 18 August 2026
+
+The managed local preview displayed the authenticated National President view of the **Development continuity review** route, including the new **Self-declared community affiliations** governance area. Its verified empty state states that confirmation is limited to an active-consent selection from the approved grassroots hierarchy and that it does **not** create an appointment, operational authority, or leadership role. No live affiliation was fabricated solely to demonstrate a confirmation button.
+
+The separate browser session may show the institutional sign-in page because it does not share the managed local preview’s authenticated session. This is an environment-session distinction rather than a failure of the authenticated governance view. Local service and router tests cover the confirmation mutation, active-consent block, exact approved-tier validation, and unauthorised-role rejection.

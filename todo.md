@@ -89,6 +89,11 @@
 - [x] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
 - [x] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
 - [ ] Fix the production static-page response so the live DOC bootstrap document completes and the ISEYC identity surface can be rendered for verification.
+- [x] Define confirmation rules for self-declared community affiliations that preserve consent, the approved four-tier hierarchy, and accountable human oversight.
+- [x] Implement administrator-only confirmation of active, self-declared community affiliations without autonomous role or authority assignment.
+- [x] Add service and router tests for affiliation confirmation, consent-withdrawal blocking, role boundaries, and exact approved-topology validation.
+- [x] Verify the controlled affiliation-governance workflow locally before checkpointing.
+- [x] Capture the authorised administrator affiliation queue and confirmation-control state in the local preview before checkpointing.
 - [x] Implement Chair-initiated, draft-only Chamber document intelligence for an uploaded source, with no autonomous activation, publication, or decision/action creation.
 - [x] Persist versioned Chamber document-intelligence drafts and explicit human-review status separately from the protected uploaded source.
 - [x] Add service and router tests that block non-Chair intelligence generation, cross-scope access, and use of unreviewed drafts as authoritative records.

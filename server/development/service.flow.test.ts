@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ getDb: vi.fn() }));
 vi.mock("../db", () => ({ getDb: mocks.getDb }));
 
-import { approveMentorship, confirmParticipationRecord, recordMentorshipCheckIn, requestMentorship, submitParticipation } from "./service";
+import { approveMentorship, confirmCommunityAffiliation, confirmParticipationRecord, recordMentorshipCheckIn, requestMentorship, submitParticipation } from "./service";
 
 function makeDb(record: unknown, updates: Array<Record<string, unknown>>, inserts: Array<Record<string, unknown>>) {
   const limit = vi.fn(async () => [record]);
@@ -88,5 +88,24 @@ describe("development continuity service flows", () => {
       expect.objectContaining({ menteeUserId: 4, status: "requested" }),
       expect.objectContaining({ relationshipId: 104, recordedByUserId: 8, mentorGuidance: "Continue with the agreed next action." }),
     ]));
+  });
+
+  it("confirms only an active-consent, self-declared affiliation against an exact approved tier", async () => {
+    const updates: Array<Record<string, unknown>> = []; const inserts: Array<Record<string, unknown>> = [];
+    const affiliation = { id: 41, userId: 4, tierId: 1, affiliationStatus: "self_declared" };
+    const profile = { userId: 4, consentStatus: "active" };
+    const tier = { id: 1, name: "Street Representative", isActive: true };
+    mocks.getDb.mockResolvedValue(makeWorkflowDb([[affiliation], [profile], [tier]], updates, inserts));
+    await expect(confirmCommunityAffiliation({ affiliationId: 41, confirmedByUserId: 7 })).resolves.toBeUndefined();
+    expect(updates).toEqual([expect.objectContaining({ affiliationStatus: "confirmed", confirmedByUserId: 7, confirmedAt: expect.any(Date) })]);
+  });
+
+  it("blocks affiliation confirmation after consent withdrawal before tier or update access", async () => {
+    const updates: Array<Record<string, unknown>> = []; const inserts: Array<Record<string, unknown>> = [];
+    const affiliation = { id: 41, userId: 4, tierId: 1, affiliationStatus: "self_declared" };
+    const withdrawnProfile = { userId: 4, consentStatus: "withdrawn" };
+    mocks.getDb.mockResolvedValue(makeWorkflowDb([[affiliation], [withdrawnProfile]], updates, inserts));
+    await expect(confirmCommunityAffiliation({ affiliationId: 41, confirmedByUserId: 7 })).rejects.toThrow("consent must be active");
+    expect(updates).toHaveLength(0);
   });
 });
