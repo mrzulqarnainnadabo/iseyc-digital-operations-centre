@@ -15,7 +15,7 @@ describe("production static document delivery", () => {
     await sendStaticIndex({ status }, "/app/dist/public");
     expect(mocks.readFile).toHaveBeenCalledWith("/app/dist/public/index.html");
     expect(status).toHaveBeenCalledWith(200);
-    expect(set).toHaveBeenCalledWith(expect.objectContaining({ "Content-Type": "text/html; charset=utf-8", "Content-Length": indexHtml.byteLength }));
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ "Content-Type": "text/html; charset=utf-8", "Content-Length": indexHtml.byteLength, "Cache-Control": "no-store, max-age=0" }));
     expect(end).toHaveBeenCalledWith(indexHtml);
   });
 
@@ -25,7 +25,7 @@ describe("production static document delivery", () => {
     const set = vi.fn(() => ({ end }));
     const status = vi.fn(() => ({ set }));
     await sendStaticFile({ status }, "/app/dist/public/assets/index.js");
-    expect(set).toHaveBeenCalledWith(expect.objectContaining({ "Content-Type": "application/javascript; charset=utf-8", "Content-Length": 20 }));
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ "Content-Type": "application/javascript; charset=utf-8", "Content-Length": 20, "Cache-Control": "public, max-age=31536000, immutable" }));
     expect(end).toHaveBeenCalledWith(Buffer.from("console.log('ISEYC')"));
   });
 

@@ -49,11 +49,10 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const distPath = resolveStaticDistPath();
-  if (!fs.existsSync(distPath)) {
-    console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
+  const indexPath = path.resolve(distPath, "index.html");
+  const hasIndex = fs.existsSync(indexPath);
+  console.log(`[Static] distPath=${distPath} indexExists=${hasIndex}`);
+  if (!hasIndex) throw new Error(`Could not find the built client index at ${indexPath}`);
 
   // The transparent production proxy can acknowledge streamed static files while never
   // completing their body. Buffering the requested asset and setting Content-Length
@@ -97,6 +96,13 @@ const staticMimeTypes: Record<string, string> = {
 
 export async function sendStaticFile(res: { status: (statusCode: number) => { set: (headers: Record<string, string | number>) => { end: (body: Buffer) => unknown } } }, filePath: string) {
   const body = await fs.promises.readFile(filePath);
-  const contentType = staticMimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream";
-  return res.status(200).set({ "Content-Type": contentType, "Content-Length": body.byteLength }).end(body);
+  const extension = path.extname(filePath).toLowerCase();
+  const contentType = staticMimeTypes[extension] || "application/octet-stream";
+  const isHtml = extension === ".html";
+  return res.status(200).set({
+    "Content-Type": contentType,
+    "Content-Length": body.byteLength,
+    "Cache-Control": isHtml ? "no-store, max-age=0" : "public, max-age=31536000, immutable",
+    "Accept-Ranges": "bytes",
+  }).end(body);
 }
