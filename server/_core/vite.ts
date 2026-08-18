@@ -58,10 +58,23 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Disable Express's default streamed index response. The transparent production proxy
+  // can acknowledge that stream while never completing the document body. Serving the
+  // small HTML bootstrap explicitly preserves static asset handling while ensuring the
+  // client application document has a complete, buffered response.
+  app.use(express.static(distPath, { index: false }));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use("*", async (_req, res, next) => {
+    try {
+      await sendStaticIndex(res, distPath);
+    } catch (error) {
+      next(error);
+    }
   });
+}
+
+export async function sendStaticIndex(res: { status: (statusCode: number) => { type: (contentType: string) => { send: (body: string) => unknown } } }, distPath: string) {
+  const indexHtml = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
+  return res.status(200).type("html").send(indexHtml);
 }

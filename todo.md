@@ -32,7 +32,7 @@
 - [x] Add Vitest coverage for new DOC safeguards, module access, content draft-only status, and publication prevention.
 - [x] Verify the upgraded Digital Operations Centre on desktop and mobile, then save a review checkpoint.
 - [x] Add service-level DOC tests for controlled Command Brief and Media AI Agent lifecycle safeguards, including test/live isolation and publication prevention.
-- [ ] Save a post-upgrade review checkpoint and verify the published Digital Operations Centre branding on the production domain.
+- [x] Save a post-upgrade review checkpoint and verify the published Digital Operations Centre branding on the production domain.
 - [x] Add mocked DOC service-flow tests for Command Brief and Media AI Agent test-only blocking, lifecycle persistence, live/test queue isolation, and publicationPerformed enforcement.
 - [x] Add mocked DOC queue-isolation tests that assert separate live and test query filtering before final review.
 - [x] Bind the scheduled meeting fallback handler to its persisted task identity before activating the 15-minute heartbeat.
@@ -86,5 +86,6 @@
 - [x] Add direct Chamber tRPC session-detail tests proving responses do not expose mixed-scope participants, audit entries, or documents.
 - [x] Add direct Chamber router-contract tests for live and test document uploads and tracker handoffs, including explicit cross-scope rejection for each contract.
 - [x] Add direct Chamber router-contract tests that filter intentionally mixed participant, audit, and document fixtures from session-detail responses.
-- [ ] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
-- [ ] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
+- [x] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
+- [x] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
+- [ ] Fix the production static-page response so the live DOC bootstrap document completes and the ISEYC identity surface can be rendered for verification.
