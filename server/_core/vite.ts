@@ -48,10 +48,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath =
-    process.env.NODE_ENV === "development"
-      ? path.resolve(import.meta.dirname, "../..", "dist", "public")
-      : path.resolve(import.meta.dirname, "public");
+  const distPath = resolveStaticDistPath();
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -74,6 +71,15 @@ export function serveStatic(app: Express) {
       next(error);
     }
   });
+}
+
+export function resolveStaticDistPath(cwd = process.cwd(), moduleDir = import.meta.dirname, indexExists = fs.existsSync) {
+  const candidates = [
+    path.resolve(cwd, "dist", "public"),
+    path.resolve(moduleDir, "public"),
+    path.resolve(moduleDir, "../..", "dist", "public"),
+  ];
+  return candidates.find(candidate => indexExists(path.resolve(candidate, "index.html"))) || candidates[0];
 }
 
 export async function sendStaticIndex(res: { status: (statusCode: number) => { set: (headers: Record<string, string | number>) => { end: (body: Buffer) => unknown } } }, distPath: string) {

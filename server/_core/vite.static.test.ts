@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ readFile: vi.fn() }));
 vi.mock("fs", () => ({ default: { promises: { readFile: mocks.readFile } } }));
 
-import { sendStaticFile, sendStaticIndex } from "./vite";
+import { resolveStaticDistPath, sendStaticFile, sendStaticIndex } from "./vite";
 
 describe("production static document delivery", () => {
   it("sends the index bootstrap as a complete HTML response instead of a streamed static index", async () => {
@@ -27,5 +27,10 @@ describe("production static document delivery", () => {
     await sendStaticFile({ status }, "/app/dist/public/assets/index.js");
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ "Content-Type": "application/javascript; charset=utf-8", "Content-Length": 20 }));
     expect(end).toHaveBeenCalledWith(Buffer.from("console.log('ISEYC')"));
+  });
+
+  it("prefers the active project build directory over an adjacent stale runtime directory", () => {
+    const resolved = resolveStaticDistPath("/workspace/iseeyc", "/workspace/iseeyc/dist", filePath => filePath === "/workspace/iseeyc/dist/public/index.html");
+    expect(resolved).toBe("/workspace/iseeyc/dist/public");
   });
 });
