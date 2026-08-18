@@ -227,5 +227,246 @@ export const docAuditLog = mysqlTable(
   table => [index("doc_audit_module_record_idx").on(table.moduleKey, table.recordId), index("doc_audit_created_idx").on(table.createdAt)],
 );
 
+export const developmentalProfiles = mysqlTable(
+  "developmental_profiles",
+  {
+    userId: int("userId").primaryKey(),
+    consentStatus: mysqlEnum("consentStatus", ["not_requested", "active", "withdrawn"]).default("not_requested").notNull(),
+    consentedAt: datetime("consentedAt"),
+    consentVersion: varchar("consentVersion", { length: 64 }),
+    visibilityLevel: mysqlEnum("visibilityLevel", ["private", "mentor_guided", "institutional_limited"]).default("private").notNull(),
+    developmentDirection: json("developmentDirection"),
+    developmentGoals: text("developmentGoals"),
+    mentoringPreference: mysqlEnum("mentoringPreference", ["not_selected", "open_to_mentoring", "seeking_mentor", "mentoring_others", "not_now"]).default("not_selected").notNull(),
+    mentorUserId: int("mentorUserId"),
+    profileStatus: mysqlEnum("profileStatus", ["not_started", "active", "paused"]).default("not_started").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("developmental_profile_consent_idx").on(table.consentStatus), index("developmental_profile_mentor_idx").on(table.mentorUserId)],
+);
+
+export const communityTiers = mysqlTable(
+  "community_tiers",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tierKey: varchar("tierKey", { length: 80 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull().unique(),
+    hierarchyOrder: int("hierarchyOrder").notNull(),
+    description: text("description"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("community_tier_order_idx").on(table.hierarchyOrder)],
+);
+
+export const responsibilityPillars = mysqlTable(
+  "responsibility_pillars",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    pillarKey: varchar("pillarKey", { length: 100 }).notNull().unique(),
+    name: varchar("name", { length: 200 }).notNull().unique(),
+    responsibilityOrder: int("responsibilityOrder").notNull(),
+    description: text("description"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("responsibility_pillar_order_idx").on(table.responsibilityOrder)],
+);
+
+export const communityUnits = mysqlTable(
+  "community_units",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tierId: int("tierId").notNull(),
+    parentUnitId: int("parentUnitId"),
+    name: varchar("name", { length: 255 }).notNull(),
+    locality: varchar("locality", { length: 255 }),
+    accountableLeadUserId: int("accountableLeadUserId"),
+    status: mysqlEnum("status", ["draft", "active", "paused", "archived"]).default("draft").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("community_unit_tier_idx").on(table.tierId), index("community_unit_parent_idx").on(table.parentUnitId), index("community_unit_status_idx").on(table.status)],
+);
+
+export const memberCommunityAffiliations = mysqlTable(
+  "member_community_affiliations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    communityUnitId: int("communityUnitId"),
+    tierId: int("tierId").notNull(),
+    affiliationStatus: mysqlEnum("affiliationStatus", ["self_declared", "confirmed", "inactive"]).default("self_declared").notNull(),
+    confirmedByUserId: int("confirmedByUserId"),
+    confirmedAt: datetime("confirmedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("member_affiliation_user_idx").on(table.userId), index("member_affiliation_tier_idx").on(table.tierId), index("member_affiliation_unit_idx").on(table.communityUnitId)],
+);
+
+export const memberPillarFocuses = mysqlTable(
+  "member_pillar_focuses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    pillarId: int("pillarId").notNull(),
+    focusStatus: mysqlEnum("focusStatus", ["interested", "contributing", "mentored", "inactive"]).default("interested").notNull(),
+    visibilityLevel: mysqlEnum("visibilityLevel", ["private", "mentor_guided", "institutional_limited"]).default("private").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("member_pillar_user_idx").on(table.userId), index("member_pillar_pillar_idx").on(table.pillarId)],
+);
+
+export const developmentParticipationRecords = mysqlTable(
+  "development_participation_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    participationType: mysqlEnum("participationType", ["meeting_contribution", "community_contribution", "development_reflection", "department_activity"]).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    detail: text("detail"),
+    sourceRecordId: int("sourceRecordId"),
+    confirmedByUserId: int("confirmedByUserId"),
+    confirmedAt: datetime("confirmedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("development_participation_user_idx").on(table.userId), index("development_participation_confirmed_idx").on(table.confirmedAt)],
+);
+
+export const mentorshipRelationships = mysqlTable(
+  "mentorship_relationships",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    menteeUserId: int("menteeUserId").notNull(),
+    mentorUserId: int("mentorUserId"),
+    status: mysqlEnum("status", ["requested", "active", "paused", "completed", "declined"]).default("requested").notNull(),
+    agreedFocus: text("agreedFocus"),
+    approvedByUserId: int("approvedByUserId"),
+    approvedAt: datetime("approvedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("mentorship_mentee_idx").on(table.menteeUserId), index("mentorship_mentor_idx").on(table.mentorUserId), index("mentorship_status_idx").on(table.status)],
+);
+
+export const mentorshipCheckIns = mysqlTable(
+  "mentorship_check_ins",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    relationshipId: int("relationshipId").notNull(),
+    checkInDate: datetime("checkInDate").notNull(),
+    memberReflection: text("memberReflection"),
+    mentorGuidance: text("mentorGuidance"),
+    nextStep: text("nextStep"),
+    recordedByUserId: int("recordedByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("mentorship_checkin_relationship_idx").on(table.relationshipId), index("mentorship_checkin_date_idx").on(table.checkInDate)],
+);
+
+export const developmentGrowthPlans = mysqlTable(
+  "development_growth_plans",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    focusPeriod: varchar("focusPeriod", { length: 120 }).notNull(),
+    goalStatement: text("goalStatement").notNull(),
+    nextAction: text("nextAction"),
+    memberReflection: text("memberReflection"),
+    status: mysqlEnum("status", ["draft", "active", "completed", "paused"]).default("draft").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("growth_plan_user_idx").on(table.userId), index("growth_plan_status_idx").on(table.status)],
+);
+
+export const chamberSessionStatusValues = ["draft", "scheduled", "open", "closed", "cancelled", "archived"] as const;
+
+export const chamberSessions = mysqlTable(
+  "chamber_sessions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    title: varchar("title", { length: 512 }).notNull(),
+    description: text("description"),
+    sessionType: mysqlEnum("sessionType", ["internal_meeting", "visitor_session", "seminar"]).notNull(),
+    conveningBody: varchar("conveningBody", { length: 255 }),
+    chairUserId: int("chairUserId").notNull(),
+    sensitivity: mysqlEnum("sensitivity", ["public", "internal", "confidential", "restricted"]).default("internal").notNull(),
+    agendaJson: json("agendaJson"),
+    scheduledStartAt: datetime("scheduledStartAt"),
+    scheduledEndAt: datetime("scheduledEndAt"),
+    status: mysqlEnum("status", chamberSessionStatusValues).default("draft").notNull(),
+    linkedMeetingSubmissionId: int("linkedMeetingSubmissionId"),
+    trackerLinkStatus: mysqlEnum("trackerLinkStatus", ["not_linked", "draft_requested", "linked"]).default("not_linked").notNull(),
+    isTestMode: boolean("isTestMode").default(false).notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("chamber_session_status_idx").on(table.status), index("chamber_session_chair_idx").on(table.chairUserId), index("chamber_session_test_idx").on(table.isTestMode), index("chamber_session_start_idx").on(table.scheduledStartAt)],
+);
+
+export const chamberParticipants = mysqlTable(
+  "chamber_participants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sessionId: int("sessionId").notNull(),
+    userId: int("userId"),
+    invitedEmail: varchar("invitedEmail", { length: 320 }),
+    displayName: varchar("displayName", { length: 255 }).notNull(),
+    officialPosition: varchar("officialPosition", { length: 255 }).notNull(),
+    participantType: mysqlEnum("participantType", ["internal", "authorised_visitor"]).default("internal").notNull(),
+    sessionRole: mysqlEnum("sessionRole", ["chair", "presenter", "participant", "observer"]).default("participant").notNull(),
+    admissionStatus: mysqlEnum("admissionStatus", ["invited", "admitted", "declined", "removed"]).default("invited").notNull(),
+    admittedByUserId: int("admittedByUserId"),
+    admittedAt: datetime("admittedAt"),
+    joinedAt: datetime("joinedAt"),
+    leftAt: datetime("leftAt"),
+    isTestMode: boolean("isTestMode").default(false).notNull(),
+    addedByUserId: int("addedByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("chamber_participant_session_idx").on(table.sessionId), index("chamber_participant_user_idx").on(table.userId), index("chamber_participant_admission_idx").on(table.admissionStatus), index("chamber_participant_test_idx").on(table.isTestMode)],
+);
+
+export const chamberDocuments = mysqlTable(
+  "chamber_documents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sessionId: int("sessionId").notNull(),
+    originalName: varchar("originalName", { length: 512 }).notNull(),
+    mimeType: varchar("mimeType", { length: 255 }).notNull(),
+    fileSizeBytes: int("fileSizeBytes").notNull(),
+    storageKey: varchar("storageKey", { length: 1024 }).notNull(),
+    storageUrl: varchar("storageUrl", { length: 1024 }).notNull(),
+    extractedText: longtext("extractedText"),
+    intelligenceStatus: mysqlEnum("intelligenceStatus", ["source_ready", "analysis_requested", "analysis_draft_ready", "withheld_for_review"]).default("source_ready").notNull(),
+    uploadedByUserId: int("uploadedByUserId").notNull(),
+    isTestMode: boolean("isTestMode").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("chamber_document_session_idx").on(table.sessionId), index("chamber_document_status_idx").on(table.intelligenceStatus), index("chamber_document_test_idx").on(table.isTestMode)],
+);
+
+export const chamberAuditLog = mysqlTable(
+  "chamber_audit_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sessionId: int("sessionId").notNull(),
+    actorUserId: int("actorUserId"),
+    eventType: varchar("eventType", { length: 100 }).notNull(),
+    detail: text("detail"),
+    isTestMode: boolean("isTestMode").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("chamber_audit_session_idx").on(table.sessionId), index("chamber_audit_created_idx").on(table.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

@@ -19,7 +19,7 @@
 - [x] Verify database migration, application type checks, automated tests, desktop workflow, and mobile layout.
 - [x] Enforce explicit authorised-officer membership at all tracker API routes and in the application access gate.
 - [x] Add controlled submission-status transition guards used by the processing, review, and approval service, with Vitest coverage.
-- [ ] Activate the scheduled fallback control after the first published deployment, using the administrator-only configuration action.
+- [x] Activate the scheduled fallback control after the first published deployment, using the administrator-only configuration action.
 - [x] Save a final project checkpoint after all completed tasks are marked accurately.
 - [x] Review the supplied Digital Operations Centre direction and resolve any conflict with existing ISEYC safeguards before implementation.
 - [x] Rebrand the published application as the ISEYC Digital Operations Centre and remove visible platform branding from the application experience.
@@ -36,3 +36,53 @@
 - [x] Add mocked DOC service-flow tests for Command Brief and Media AI Agent test-only blocking, lifecycle persistence, live/test queue isolation, and publicationPerformed enforcement.
 - [x] Add mocked DOC queue-isolation tests that assert separate live and test query filtering before final review.
 - [x] Bind the scheduled meeting fallback handler to its persisted task identity before activating the 15-minute heartbeat.
+- [x] Verify one successful post-binding production heartbeat run against the hardened endpoint, and document the project-level activation method used.
+- [x] Document the registered meeting-fallback activation method and post-binding production verification in a durable project operations note.
+- [x] Define a private, National President-only Presidential Command layer with the Command Brief as the top operational element.
+- [x] Extend sign-in profiles into consent-based developmental profiles supporting mentorship, guidance, participation history, and growth planning.
+- [x] Model the ISEYC 4-tier grassroots structure and 7 Responsibility Pillars as governed community-intelligence systems.
+- [ ] Define key departments as intelligent development environments for AI-shaped civic and community contribution.
+- [ ] Define the Civic Brain connection and a controlled national awareness layer spanning National Assembly, federal, state, and local developments.
+- [x] Integrate the supplied official ISEYC logo into the application-owned identity system.
+- [x] Preserve draft-only, human-approved Media & Content Command behaviour for all posts, replies, and outreach.
+- [x] Produce the revised DOC information architecture and a phased, controlled next build recommendation.
+- [x] Add the official supplied ISEYC logo as a managed application asset and apply it to institutional navigation and access surfaces.
+- [x] Enforce a distinct National President command permission that protects the full Presidential Command layer.
+- [x] Add consent-based developmental profile records with editable member-owned development direction, mentoring preferences, and visibility controls.
+- [x] Add configurable community topology records using exactly: Street Representative, Line Coordinator, Ward Coordinator, and Central Leadership.
+- [x] Add configurable Responsibility Pillar records using exactly: Safety & Emergency Response; Health & Wellbeing; Education & Capacity Building; Economic Linkages & Livelihoods; Sanitation & Environment; Data, Intelligence & Documentation; and Community Voice & Participation.
+- [x] Build an authorised member development profile interface and governed community topology interface.
+- [x] Add Vitest coverage for National President command access, profile consent boundaries, and approved hierarchy terminology.
+- [x] Verify the foundation on desktop and mobile and save a controlled review checkpoint.
+- [x] Add confirmed participation history, mentor relationship check-ins, and structured growth-planning records to complete the developmental profile lifecycle.
+- [ ] Save a post-foundation review checkpoint after the developmental-profile and community-topology update.
+- [x] Build a governed administrator and mentor workflow to confirm participation, approve mentorship requests, and record approved mentorship check-ins.
+- [x] Add Vitest coverage for developmental participation confirmation, mentorship approval, and mentorship check-in authorization safeguards.
+- [x] Add service or router Vitest coverage for participation confirmation, mentorship approval, and check-in persistence and authorization paths.
+- [x] Verify developmental governance access controls and member-to-admin workflow paths end to end before review checkpointing.
+- [ ] Exercise the complete member-to-admin developmental workflow through participation submission, confirmation, mentorship request, approval, and check-in recording.
+- [ ] Verify unauthorized direct-route behaviour for development governance before the post-foundation review checkpoint.
+- [x] Assess existing Meeting & Decision Tracker safeguards and records capabilities for Digital Chamber reuse.
+- [x] Define Digital Chamber sessions, participant role visibility, internal and visitor access, document intelligence, audio explanation, and governance boundaries.
+- [x] Produce a phased Digital Chamber delivery plan that preserves draft-only records, human approval, audit, test isolation, and private Presidential access.
+- [x] Recommend the first controlled Digital Chamber implementation increment without replacing the current tracker.
+- [x] Add governed Digital Chamber session, participant, role-display, visitor, and audit data structures with live/test isolation.
+- [x] Build Chamber session creation, Chair-controlled admission, participant roster, agenda, and session-state controls.
+- [x] Link Chamber sessions to the existing Meeting & Decision Tracker draft workflow without bypassing approval or action confirmation safeguards.
+- [x] Add a controlled Chair document-desk handoff for later text and audio intelligence generation without implementing autonomous interpretation or broadcasting.
+- [x] Preserve private National President command access, authorised role gates, official ISEYC branding, and all existing audit controls throughout Chamber implementation.
+- [x] Add Vitest coverage for Chamber role access, visitor restrictions, session-state transitions, test isolation, and tracker-link safeguards.
+- [x] Verify the Chamber Session Foundation on desktop and mobile and save a controlled implementation checkpoint.
+- [x] Verify both the Chamber register and a Chamber session-room route at desktop and mobile widths, documenting any issues found or resolved.
+- [x] Save a controlled Digital Chamber implementation checkpoint after the verified Chamber foundation review.
+- [x] Add a clear recovery state for unavailable or unauthorised direct Chamber session routes instead of leaving the session room in a loading state.
+- [x] Implement an end-to-end Chamber-to-Meeting Tracker draft handoff that creates or links an actual draft submission without approving records or actions.
+- [x] Build the protected Chair document-desk upload and source-handoff workflow for later human-reviewed text and audio explanation.
+- [x] Add Chamber service and router Vitest coverage for live/test isolation across session, participant, tracker-handoff, and document-desk flows.
+- [x] Add Chamber service tests proving session detail filters participants, audit history, and documents by matching live/test scope.
+- [x] Add Chamber router and service tests proving document-desk upload and tracker handoff remain isolated in both live and test modes.
+- [x] Add router-level Chamber tests proving session-detail access does not expose mixed-scope participants or documents.
+- [x] Add direct Chamber tRPC tests for live and test document upload and tracker handoff contracts, including cross-scope rejection.
+- [x] Add direct Chamber tRPC session-detail tests proving responses do not expose mixed-scope participants, audit entries, or documents.
+- [x] Add direct Chamber router-contract tests for live and test document uploads and tracker handoffs, including explicit cross-scope rejection for each contract.
+- [x] Add direct Chamber router-contract tests that filter intentionally mixed participant, audit, and document fixtures from session-detail responses.

@@ -16,8 +16,23 @@ describe("DOC router access controls", () => {
     await expect(caller.doc.commandBriefs({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("blocks a Presidential Council role from the full National President Command layer", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ docRole: "presidential_council" })));
+    await expect(caller.doc.commandBriefs({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("blocks a signed-in but unauthorised account from Media AI Agent data", async () => {
     const caller = appRouter.createCaller(contextFor(user({ isAuthorizedOfficer: false })));
     await expect(caller.doc.contentQueue({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("blocks a non-administrator from the developmental governance queue", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ role: "user", docRole: "officer" })));
+    await expect(caller.development.governanceQueue()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("blocks an unauthorised account from the Digital Chamber session register", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ isAuthorizedOfficer: false })));
+    await expect(caller.chamber.sessions({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

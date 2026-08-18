@@ -36,6 +36,27 @@
       "when": 1786834204075,
       "tag": "0004_mysterious_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787056847544,
+      "tag": "0005_left_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787057383821,
+      "tag": "0006_neat_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1787058705506,
+      "tag": "0007_kind_jigsaw",
+      "breakpoints": true
     }
   ]
 }

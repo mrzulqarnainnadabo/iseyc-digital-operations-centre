@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { developmentalProfiles, InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     await db.insert(users).values(values).onDuplicateKeyUpdate({
       set: updateSet,
     });
+
+    const persisted = await db.select({ id: users.id }).from(users).where(eq(users.openId, user.openId)).limit(1);
+    if (persisted[0]) {
+      await db.insert(developmentalProfiles).values({ userId: persisted[0].id }).onDuplicateKeyUpdate({
+        set: { userId: persisted[0].id },
+      });
+    }
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;

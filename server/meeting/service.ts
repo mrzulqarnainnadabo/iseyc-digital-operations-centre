@@ -145,6 +145,52 @@ export async function storeSubmission(input: {
   return submissionId;
 }
 
+export async function createChamberTrackerDraftSubmission(input: {
+  chamberSessionId: number;
+  meetingTitle: string;
+  meetingDate?: string;
+  conveningBody?: string;
+  sensitivity: "public" | "internal" | "confidential" | "restricted";
+  isTestMode: boolean;
+  submittedByUserId: number;
+  files: Array<{ originalName: string; mimeType: string; fileSizeBytes: number; storageKey: string; storageUrl: string; extractedText?: string | null }>;
+}) {
+  const db = await requireDb();
+  const sourceGroupKey = `chamber-session-${input.chamberSessionId}`;
+  const existing = await db.select().from(meetingSubmissions).where(and(
+    eq(meetingSubmissions.sourceGroupKey, sourceGroupKey),
+    eq(meetingSubmissions.isTestMode, input.isTestMode),
+  )).limit(1);
+  if (existing[0]) return existing[0].id;
+  const settings = await getSettings();
+  const result = await db.insert(meetingSubmissions).values({
+    meetingTitle: input.meetingTitle,
+    meetingDate: input.meetingDate || null,
+    conveningBody: input.conveningBody || null,
+    sensitivity: input.sensitivity,
+    sourceGroupKey,
+    isTestMode: input.isTestMode,
+    status: "pending_consolidation",
+    submittedByUserId: input.submittedByUserId,
+    consolidationEligibleAt: new Date(Date.now() + settings.consolidationMinutes * 60_000),
+    authoritativePromptVersion: AUTHORITATIVE_PROMPT_VERSION,
+  });
+  const submissionId = asNumber(result[0].insertId);
+  await db.insert(meetingFiles).values(input.files.map(file => ({
+    submissionId,
+    originalName: file.originalName,
+    documentType: "other" as const,
+    mimeType: file.mimeType,
+    fileSizeBytes: file.fileSizeBytes,
+    storageKey: file.storageKey,
+    storageUrl: file.storageUrl,
+    extractedText: file.extractedText?.slice(0, 120_000) || null,
+    uploadedByUserId: input.submittedByUserId,
+  })));
+  await audit(submissionId, "chamber_draft_handoff_created", `Digital Chamber session ${input.chamberSessionId} created a draft-only handoff. No record, decision, or action was approved.`, input.isTestMode, input.submittedByUserId);
+  return submissionId;
+}
+
 export async function getQueue(actor: { id: number; role: "user" | "admin" }, isTestMode = false) {
   const db = await requireDb();
   const rows = await db.select().from(meetingSubmissions).where(eq(meetingSubmissions.isTestMode, isTestMode)).orderBy(desc(meetingSubmissions.updatedAt));

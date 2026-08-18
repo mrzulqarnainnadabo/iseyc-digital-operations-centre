@@ -37,15 +37,15 @@ const requireAuthorisedOfficer = t.middleware(async opts => {
 
 export const officerProcedure = t.procedure.use(requireAuthorisedOfficer);
 
-const requirePresidentialRole = t.middleware(async opts => {
+const requireNationalPresident = t.middleware(async opts => {
   const { ctx, next } = opts;
-  if (!ctx.user || !["national_president", "presidential_council"].includes(ctx.user.docRole)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Presidential Command Brief access requires an authorised presidential role." });
+  if (!ctx.user || ctx.user.docRole !== "national_president") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Full Presidential Command access is reserved for the National President." });
   }
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-export const presidentialProcedure = t.procedure.use(requireAuthorisedOfficer).use(requirePresidentialRole);
+export const nationalPresidentProcedure = t.procedure.use(requireAuthorisedOfficer).use(requireNationalPresident);
 
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
