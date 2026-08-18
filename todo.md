@@ -88,7 +88,7 @@
 - [x] Add direct Chamber router-contract tests that filter intentionally mixed participant, audit, and document fixtures from session-detail responses.
 - [x] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
 - [x] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
-- [ ] Fix the production static-page response so the live DOC bootstrap document completes and the ISEYC identity surface can be rendered for verification.
+- [x] Fix the production static-page response so the live DOC bootstrap document completes and the ISEYC identity surface can be rendered for verification.
 - [x] Define confirmation rules for self-declared community affiliations that preserve consent, the approved four-tier hierarchy, and accountable human oversight.
 - [x] Implement administrator-only confirmation of active, self-declared community affiliations without autonomous role or authority assignment.
 - [x] Add service and router tests for affiliation confirmation, consent-withdrawal blocking, role boundaries, and exact approved-topology validation.
