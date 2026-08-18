@@ -89,3 +89,19 @@
 - [x] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
 - [x] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
 - [ ] Fix the production static-page response so the live DOC bootstrap document completes and the ISEYC identity surface can be rendered for verification.
+- [x] Implement Chair-initiated, draft-only Chamber document intelligence for an uploaded source, with no autonomous activation, publication, or decision/action creation.
+- [x] Persist versioned Chamber document-intelligence drafts and explicit human-review status separately from the protected uploaded source.
+- [x] Add service and router tests that block non-Chair intelligence generation, cross-scope access, and use of unreviewed drafts as authoritative records.
+- [x] Add explicit Chamber service and router tests proving intelligence drafts cannot be used for tracker handoff, authoritative records, decision creation, or action creation.
+- [x] Add direct tests proving Chamber intelligence drafts cannot create decisions or action items through Chamber or Meeting & Decision contracts.
+- [x] Add direct Meeting & Decision payload and contract tests rejecting Chamber intelligence draft fields from authoritative record, decision, and action paths.
+- [x] Add direct real Meeting & Decision submit, approval, and action-confirmation tests rejecting Chamber intelligence draft fields before downstream services are called.
+- [x] Add an end-to-end source-only Chamber handoff and Meeting & Decision processing test proving generated draft records and action candidates exclude intelligence-draft content.
+- [x] Strengthen developmental-profile and community-topology governance tests around consent withdrawal, role boundaries, and approved terminology continuity.
+- [x] Add direct developmental route tests blocking unauthorised roles from participation confirmation and mentorship approval.
+- [x] Add a profile-update topology test proving only the exact approved tiers and Responsibility Pillars are accepted and retained after consent changes.
+- [x] Re-verify National President-only Command Brief access, Chamber review paths, and developmental governance flows locally before checkpointing.
+- [x] Correct the Presidential Command local route verification target and validate the actual protected Command Brief route.
+- [x] Verify direct Chamber session queries settle into an accessible session room or the existing unavailable-session recovery state after the request completes.
+- [x] Locally verify an authorised Chamber intelligence review state is visible only to a session manager.
+- [x] Locally verify the developmental governance interface after consent-withdrawal and role-boundary safeguards.

@@ -8,5 +8,6 @@ export function profileConsentPolicy(consentStatus: DevelopmentProfileConsentSta
     consentVersion: isActive ? "ISEYC-DOC-DEVELOPMENT-1.0" : null,
     shouldRetainVoluntaryDevelopmentData: isActive,
     shouldClearCommunitySelections: !isActive,
+    shouldClearVoluntaryDevelopmentHistory: !isActive,
   };
 }

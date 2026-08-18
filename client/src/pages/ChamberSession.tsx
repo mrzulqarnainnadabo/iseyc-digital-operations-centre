@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, FileClock, Landmark, LockKeyhole, Upload, UserPlus, UsersRound } from "lucide-react";
+import { ArrowLeft, BrainCircuit, FileClock, Landmark, LockKeyhole, Upload, UserPlus, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useRoute } from "wouter";
@@ -28,6 +28,9 @@ export default function ChamberSession() {
   const [sessionRole, setSessionRole] = useState<SessionRole>("participant");
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [sourceText, setSourceText] = useState("");
+  const [reviewDecision, setReviewDecision] = useState<Record<number, "under_review" | "approved_for_audio" | "withheld_for_review">>({});
+  const [reviewNotes, setReviewNotes] = useState<Record<number, string>>({});
+  const [confirmedSources, setConfirmedSources] = useState<Record<number, boolean>>({});
 
   const refresh = () => {
     utils.chamber.session.invalidate({ sessionId });
@@ -45,11 +48,19 @@ export default function ChamberSession() {
     onSuccess: () => { refresh(); setSourceFile(null); setSourceText(""); toast.success("Source document added to the protected Chair document desk."); },
     onError: error => toast.error(error.message),
   });
+  const requestIntelligence = trpc.chamber.requestDocumentIntelligence.useMutation({
+    onSuccess: () => { refresh(); toast.success("Structured draft analysis prepared for Chair review. It remains non-authoritative and no audio was created."); },
+    onError: error => toast.error(error.message),
+  });
+  const reviewIntelligence = trpc.chamber.reviewDocumentIntelligence.useMutation({
+    onSuccess: () => { refresh(); toast.success("Human review recorded. Audio remains a separate inactive step."); },
+    onError: error => toast.error(error.message),
+  });
 
   if (sessionQuery.isLoading) return <div className="mx-auto max-w-6xl p-8 text-sm text-slate-500">Loading controlled Chamber session…</div>;
   if (sessionQuery.error || !sessionQuery.data) return <UnavailableSession onReturn={() => setLocation("/chamber")} />;
 
-  const { session, participants, audit, documents, canManage, documentDesk } = sessionQuery.data;
+  const { session, participants, audit, documents, intelligenceDrafts, canManage, documentDesk } = sessionQuery.data;
   const agenda = Array.isArray(session.agendaJson) ? session.agendaJson as string[] : [];
   const nextStatus = session.status === "draft" ? "scheduled" : session.status === "scheduled" ? "open" : session.status === "open" ? "closed" : session.status === "closed" || session.status === "cancelled" ? "archived" : undefined;
 
@@ -94,8 +105,10 @@ export default function ChamberSession() {
           <div className="flex items-center gap-3"><FileClock className="h-5 w-5 text-emerald-700" /><div><p className="font-medium text-slate-900">Chair document desk</p><p className="text-sm text-slate-500">Store approved source material here. The later text and audio explanation layer remains human-reviewed and is not activated by document upload.</p></div></div>
           <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">{documentDesk.message}</div>
           {canManage ? <div className="mt-5 grid gap-3"><Input type="file" onChange={event => setSourceFile(event.target.files?.[0] || null)} /><Textarea value={sourceText} onChange={event => setSourceText(event.target.value)} placeholder="Optional extracted or Chair-supplied source text for the future reviewed intelligence workflow." /><Button variant="outline" disabled={!sourceFile || uploadDocument.isPending} onClick={uploadSource}><Upload className="mr-2 h-4 w-4" />Add protected source document</Button></div> : null}
-          <div className="mt-5 space-y-2">{documents.length ? documents.map(document => <a key={document.id} href={document.storageUrl} target="_blank" rel="noreferrer" className="block rounded-lg border border-slate-200 p-3 text-sm text-slate-700 transition hover:border-emerald-300"><span className="font-medium">{document.originalName}</span><span className="mt-1 block text-xs text-slate-500">{document.intelligenceStatus.replaceAll("_", " ")}</span></a>) : <p className="text-sm text-slate-500">No source documents have been added.</p>}</div>
+          <div className="mt-5 space-y-2">{documents.length ? documents.map(document => <div key={document.id} className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700"><a href={document.storageUrl} target="_blank" rel="noreferrer" className="block transition hover:text-emerald-800"><span className="font-medium">{document.originalName}</span><span className="mt-1 block text-xs text-slate-500">{document.intelligenceStatus.replaceAll("_", " ")}</span></a>{canManage && ["source_ready", "withheld_for_review", "analysis_draft_ready"].includes(document.intelligenceStatus) ? <Button size="sm" variant="outline" className="mt-3" disabled={requestIntelligence.isPending} onClick={() => requestIntelligence.mutate({ sessionId, documentId: document.id })}><BrainCircuit className="mr-2 h-4 w-4" />Prepare Chair review draft</Button> : null}</div>) : <p className="text-sm text-slate-500">No source documents have been added.</p>}</div>
         </CardContent></Card>
+
+        {canManage ? <Card><CardContent className="p-6"><div className="flex items-center gap-3"><BrainCircuit className="h-5 w-5 text-emerald-700" /><div><p className="font-medium text-slate-900">Human-reviewed document intelligence</p><p className="text-sm text-slate-500">Only the Chair and authorised administrators can see these drafts. They are not records, decisions, actions, publications, or audio.</p></div></div><div className="mt-5 space-y-4">{intelligenceDrafts.length ? intelligenceDrafts.map(draft => { const content = draft.draftJson as Record<string, unknown> | null; const decision = reviewDecision[draft.id] || "under_review"; return <div key={draft.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium text-slate-900">Draft analysis #{draft.id}</p><p className="mt-1 text-xs text-slate-500">{draft.promptVersion} · {draft.status.replaceAll("_", " ")}</p></div><Badge variant="secondary">DRAFT — HUMAN REVIEW REQUIRED</Badge></div>{content ? <div className="mt-4 space-y-3 text-sm text-slate-700"><DraftSection title="Executive summary" value={content.executiveSummary} /><DraftSection title="Key points" value={content.keyPoints} /><DraftSection title="Institutional implications" value={content.institutionalImplications} /><DraftSection title="Discussion questions" value={content.suggestedDiscussionQuestions} /><DraftSection title="Source traceability" value={content.sourceTraceability} /><DraftSection title="Review flags" value={content.reviewFlags} /></div> : <p className="mt-3 text-sm text-slate-500">No generated draft content is available. This item may have been withheld for review.</p>}<div className="mt-4 grid gap-3 border-t border-slate-200 pt-4"><Select value={decision} onValueChange={value => setReviewDecision(current => ({ ...current, [draft.id]: value as "under_review" | "approved_for_audio" | "withheld_for_review" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="under_review">Keep text draft under review</SelectItem><SelectItem value="approved_for_audio">Approve source-confirmed text for a separate audio step</SelectItem><SelectItem value="withheld_for_review">Withhold for review</SelectItem></SelectContent></Select><Textarea value={reviewNotes[draft.id] || ""} onChange={event => setReviewNotes(current => ({ ...current, [draft.id]: event.target.value }))} placeholder="Human review note (optional)" /><label className="flex items-start gap-2 text-xs leading-5 text-slate-600"><input className="mt-1" type="checkbox" checked={Boolean(confirmedSources[draft.id])} onChange={event => setConfirmedSources(current => ({ ...current, [draft.id]: event.target.checked }))} />I have confirmed that the controlled source set is sufficient for this review. This does not create, send, or play audio.</label><Button size="sm" variant="outline" disabled={!content || reviewIntelligence.isPending || (decision === "approved_for_audio" && !confirmedSources[draft.id])} onClick={() => reviewIntelligence.mutate({ sessionId, draftId: draft.id, decision, sourceSetConfirmed: Boolean(confirmedSources[draft.id]), note: reviewNotes[draft.id] || undefined })}>Record human review</Button></div></div>; }) : <p className="text-sm text-slate-500">No Chair review drafts have been requested.</p>}</div></CardContent></Card> : null}
 
         <Card><CardContent className="p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium text-slate-900">Meeting & Decision continuity</p><p className="mt-1 text-sm text-slate-500">A Chair can create a real draft submission from the stored sources. The existing review and action-confirmation rules remain the sole path to institutional authority.</p></div>{canManage && session.trackerLinkStatus === "not_linked" ? <Button onClick={() => tracker.mutate({ sessionId })} disabled={tracker.isPending || !documents.length}><Landmark className="mr-2 h-4 w-4" />Create draft handoff</Button> : <Badge variant="secondary">{session.trackerLinkStatus.replaceAll("_", " ")}</Badge>}</div></CardContent></Card>
       </main>
@@ -110,6 +123,8 @@ export default function ChamberSession() {
 }
 
 function DataPair({ label, value, light = false }: { label: string; value: string; light?: boolean }) { return <div><dt className={`text-xs uppercase tracking-[.12em] ${light ? "text-slate-400" : "text-slate-500"}`}>{label}</dt><dd className={`mt-1 text-sm capitalize ${light ? "text-white" : "text-slate-900"}`}>{value}</dd></div>; }
+
+function DraftSection({ title, value }: { title: string; value: unknown }) { if (!value || (Array.isArray(value) && !value.length)) return null; return <div><p className="text-xs font-semibold uppercase tracking-[.1em] text-slate-500">{title}</p>{Array.isArray(value) ? <ul className="mt-1 list-disc space-y-1 pl-5">{value.map((item, index) => <li key={`${title}-${index}`}>{String(item)}</li>)}</ul> : <p className="mt-1 leading-6">{String(value)}</p>}</div>; }
 
 function UnavailableSession({ onReturn }: { onReturn: () => void }) { return <div className="mx-auto max-w-4xl p-8"><Card><CardContent className="p-8 text-center"><LockKeyhole className="mx-auto h-6 w-6 text-slate-400" /><h1 className="mt-4 font-serif text-2xl text-slate-950">Chamber session unavailable</h1><p className="mt-2 text-sm leading-6 text-slate-600">This session does not exist, is outside the selected test boundary, or you have not been admitted to its controlled roster.</p><Button className="mt-5" variant="outline" onClick={onReturn}><ArrowLeft className="mr-2 h-4 w-4" />Return to session register</Button></CardContent></Card></div>; }
 

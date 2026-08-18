@@ -51,6 +51,16 @@ type DraftRecord = {
   closingLine: string;
 };
 
+type ChamberTrackerSourceFile = { originalName: string; mimeType: string; fileSizeBytes: number; storageKey: string; storageUrl: string; extractedText?: string | null };
+
+export function assertChamberSourceOnlyFiles(files: ChamberTrackerSourceFile[]) {
+  const permittedKeys = new Set(["originalName", "mimeType", "fileSizeBytes", "storageKey", "storageUrl", "extractedText"]);
+  for (const file of files) {
+    const unsupportedKeys = Object.keys(file).filter(key => !permittedKeys.has(key));
+    if (unsupportedKeys.length) throw new Error(`Chamber intelligence draft fields cannot enter a Meeting & Decision handoff: ${unsupportedKeys.join(", ")}.`);
+  }
+}
+
 function asNumber(value: unknown) {
   return Number(value);
 }
@@ -153,8 +163,9 @@ export async function createChamberTrackerDraftSubmission(input: {
   sensitivity: "public" | "internal" | "confidential" | "restricted";
   isTestMode: boolean;
   submittedByUserId: number;
-  files: Array<{ originalName: string; mimeType: string; fileSizeBytes: number; storageKey: string; storageUrl: string; extractedText?: string | null }>;
+  files: ChamberTrackerSourceFile[];
 }) {
+  assertChamberSourceOnlyFiles(input.files);
   const db = await requireDb();
   const sourceGroupKey = `chamber-session-${input.chamberSessionId}`;
   const existing = await db.select().from(meetingSubmissions).where(and(
@@ -187,7 +198,7 @@ export async function createChamberTrackerDraftSubmission(input: {
     extractedText: file.extractedText?.slice(0, 120_000) || null,
     uploadedByUserId: input.submittedByUserId,
   })));
-  await audit(submissionId, "chamber_draft_handoff_created", `Digital Chamber session ${input.chamberSessionId} created a draft-only handoff. No record, decision, or action was approved.`, input.isTestMode, input.submittedByUserId);
+  await audit(submissionId, "chamber_draft_handoff_created", `Digital Chamber session ${input.chamberSessionId} created a draft-only handoff from protected source documents only. Intelligence drafts are excluded. No record, decision, or action was approved.`, input.isTestMode, input.submittedByUserId);
   return submissionId;
 }
 

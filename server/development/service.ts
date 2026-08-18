@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { communityTiers, developmentGrowthPlans, developmentParticipationRecords, developmentalProfiles, memberCommunityAffiliations, memberPillarFocuses, mentorshipCheckIns, mentorshipRelationships, responsibilityPillars, users } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { profileConsentPolicy } from "./consent";
 import { canApproveMentorship, canConfirmParticipation, canRecordMentorshipCheckIn } from "./governance";
+import { assertApprovedTopologySelection } from "./approvedTopology";
 
 const CONSENT_VERSION = "ISEYC-DOC-DEVELOPMENT-1.0";
 
@@ -57,10 +58,7 @@ export async function updateMyDevelopmentProfile(input: {
 }) {
   const db = await requireDb();
   const topology = await getCommunityTopology();
-  const tierIds = new Set(topology.tiers.map(item => item.id));
-  const pillarIds = new Set(topology.pillars.map(item => item.id));
-  if (input.tierId && !tierIds.has(input.tierId)) throw new Error("The selected grassroots tier is not an approved ISEYC tier.");
-  if (input.pillarIds.some(id => !pillarIds.has(id))) throw new Error("One or more selected Responsibility Pillars are not approved ISEYC pillars.");
+  assertApprovedTopologySelection({ tiers: topology.tiers, pillars: topology.pillars, tierId: input.tierId, pillarIds: input.pillarIds });
 
   const consentPolicy = profileConsentPolicy(input.consentStatus);
   await db.insert(developmentalProfiles).values({
@@ -88,6 +86,14 @@ export async function updateMyDevelopmentProfile(input: {
 
   await db.delete(memberCommunityAffiliations).where(eq(memberCommunityAffiliations.userId, input.userId));
   await db.delete(memberPillarFocuses).where(eq(memberPillarFocuses.userId, input.userId));
+  if (consentPolicy.shouldClearVoluntaryDevelopmentHistory) {
+    const menteeRelationships = await db.select({ id: mentorshipRelationships.id }).from(mentorshipRelationships).where(eq(mentorshipRelationships.menteeUserId, input.userId));
+    const relationshipIds = menteeRelationships.map(item => item.id);
+    if (relationshipIds.length) await db.delete(mentorshipCheckIns).where(inArray(mentorshipCheckIns.relationshipId, relationshipIds));
+    await db.delete(mentorshipRelationships).where(eq(mentorshipRelationships.menteeUserId, input.userId));
+    await db.delete(developmentParticipationRecords).where(eq(developmentParticipationRecords.userId, input.userId));
+    await db.delete(developmentGrowthPlans).where(eq(developmentGrowthPlans.userId, input.userId));
+  }
   if (consentPolicy.isActive && input.tierId) {
     await db.insert(memberCommunityAffiliations).values({ userId: input.userId, tierId: input.tierId, affiliationStatus: "self_declared" });
   }

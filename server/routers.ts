@@ -23,7 +23,7 @@ import {
 } from "./meeting/service";
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 import { approveMentorship, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
-import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberTrackerDraft, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
+import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
 
 const sensitivitySchema = z.enum(["public", "internal", "confidential", "restricted", "not_recorded"]);
 const documentTypeSchema = z.enum(["agenda", "minutes", "notes", "transcript", "decision_log", "action_list", "other"]);
@@ -33,7 +33,7 @@ const fileSchema = z.object({
   mimeType: z.string().min(1).max(255),
   base64: z.string().min(1),
   sourceText: z.string().max(120000).optional(),
-});
+}).strict();
 
 const sampleMaterial = `ISEYC National Programmes Committee — Sample Review Meeting\nDate: 12 Aug 2026\nChair: Programme Director\nRecord keeper: Operations Officer\n\nAgenda\n1. Review community outreach readiness.\n2. Confirm reporting cadence.\n3. Identify implementation dependencies.\n\nDecision\nThe Committee approved a monthly readiness report beginning 30 Sep 2026, subject to each regional focal point providing source updates by the 25th of each month.\n\nAction\nRegional Focal Point — submit regional readiness update by 25 Sep 2026. Status: Open.\nOperations Officer — circulate the approved reporting template by 05 Sep 2026. Status: Open.\n\nRisk\nTwo regions have not confirmed access to the reporting template. This may delay the first reporting cycle.\n\nOpen question\nConfirm the final list of regional focal points at the next Committee meeting.`;
 
@@ -80,6 +80,7 @@ export const appRouter = router({
         participants: detail.participants.filter(item => item.isTestMode === isTestMode),
         audit: detail.audit.filter(item => item.isTestMode === isTestMode),
         documents: detail.documents.filter(item => item.isTestMode === isTestMode),
+        intelligenceDrafts: (detail.intelligenceDrafts || []).filter(item => item.isTestMode === isTestMode),
       };
     }),
     createSession: officerProcedure.input(z.object({
@@ -104,6 +105,8 @@ export const appRouter = router({
     setAdmission: officerProcedure.input(z.object({ sessionId: z.number().int().positive(), participantId: z.number().int().positive(), admissionStatus: z.enum(["admitted", "declined", "removed"]) })).mutation(({ ctx, input }) => setParticipantAdmission({ ...input, actor: ctx.user })),
     transitionSession: officerProcedure.input(z.object({ sessionId: z.number().int().positive(), nextStatus: z.enum(["draft", "scheduled", "open", "closed", "cancelled", "archived"]) })).mutation(({ ctx, input }) => transitionChamberSession({ ...input, actor: ctx.user })),
     uploadDocument: officerProcedure.input(z.object({ sessionId: z.number().int().positive(), originalName: z.string().min(1).max(512), mimeType: z.string().min(1).max(255), base64: z.string().min(1), sourceText: z.string().max(120000).optional() })).mutation(({ ctx, input }) => uploadChamberDocument({ ...input, actor: ctx.user })),
+    requestDocumentIntelligence: officerProcedure.input(z.object({ sessionId: z.number().int().positive(), documentId: z.number().int().positive() })).mutation(({ ctx, input }) => requestChamberDocumentIntelligence({ ...input, actor: ctx.user })),
+    reviewDocumentIntelligence: officerProcedure.input(z.object({ sessionId: z.number().int().positive(), draftId: z.number().int().positive(), decision: z.enum(["under_review", "approved_for_audio", "withheld_for_review"]), sourceSetConfirmed: z.boolean(), note: z.string().max(5000).optional() })).mutation(({ ctx, input }) => reviewChamberDocumentIntelligence({ ...input, actor: ctx.user })),
     requestTrackerDraft: officerProcedure.input(z.object({ sessionId: z.number().int().positive() })).mutation(({ ctx, input }) => requestChamberTrackerDraft({ ...input, actor: ctx.user })),
   }),
   meeting: router({
@@ -152,11 +155,11 @@ export const appRouter = router({
       decision: z.enum(["approved", "revision_requested", "rejected"]),
       reviewNote: z.string().max(5000).optional(),
     })).mutation(({ ctx, input }) => recordSectionReview({ ...input, reviewerUserId: ctx.user.id })),
-    approve: officerAdminProcedure.input(z.object({ submissionId: z.number().int().positive() })).mutation(({ ctx, input }) =>
+    approve: officerAdminProcedure.input(z.object({ submissionId: z.number().int().positive() }).strict()).mutation(({ ctx, input }) =>
       approveSubmission({ submissionId: input.submissionId, reviewerUserId: ctx.user.id, reviewerRole: ctx.user.role }),
     ),
     actions: officerProcedure.query(({ ctx }) => getApprovedActions({ id: ctx.user.id, role: ctx.user.role })),
-    confirmAction: officerAdminProcedure.input(z.object({ actionId: z.number().int().positive() })).mutation(({ ctx, input }) =>
+    confirmAction: officerAdminProcedure.input(z.object({ actionId: z.number().int().positive() }).strict()).mutation(({ ctx, input }) =>
       confirmAction({ actionId: input.actionId, reviewerUserId: ctx.user.id, reviewerRole: ctx.user.role }),
     ),
     configureFallback: officerAdminProcedure.mutation(async ({ ctx }) => {

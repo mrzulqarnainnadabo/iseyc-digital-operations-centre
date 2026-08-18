@@ -21,6 +21,11 @@ describe("DOC router access controls", () => {
     await expect(caller.doc.commandBriefs({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("permits the National President through the protected Command Brief access gate", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ id: 1, role: "admin", docRole: "national_president" })));
+    await expect(caller.development.nationalPresidentAccess()).resolves.toEqual({ userId: 1, commandAccess: "full" });
+  });
+
   it("blocks a signed-in but unauthorised account from Media AI Agent data", async () => {
     const caller = appRouter.createCaller(contextFor(user({ isAuthorizedOfficer: false })));
     await expect(caller.doc.contentQueue({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -35,6 +40,13 @@ describe("DOC router access controls", () => {
     const caller = appRouter.createCaller(contextFor(user({ role: "user", docRole: "officer" })));
     await expect(caller.development.confirmParticipationRecord({ participationId: 13 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.development.approveMentorship({ relationshipId: 21, mentorUserId: 8, agreedFocus: "Attempted direct approval" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("blocks an unauthorised member from every participation-confirmation and mentorship-approval mutation before service execution", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ role: "user", docRole: "member", isAuthorizedOfficer: false })));
+    await expect(caller.development.confirmParticipation({ userId: 14, participationType: "community_contribution", title: "Attempted confirmation" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.development.confirmParticipationRecord({ participationId: 13 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.development.approveMentorship({ relationshipId: 21, mentorUserId: 8 })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("blocks an unauthorised account from the Digital Chamber session register", async () => {

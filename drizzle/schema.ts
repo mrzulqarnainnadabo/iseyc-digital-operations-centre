@@ -454,6 +454,32 @@ export const chamberDocuments = mysqlTable(
   table => [index("chamber_document_session_idx").on(table.sessionId), index("chamber_document_status_idx").on(table.intelligenceStatus), index("chamber_document_test_idx").on(table.isTestMode)],
 );
 
+export const chamberDocumentIntelligenceDrafts = mysqlTable(
+  "chamber_document_intelligence_drafts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sessionId: int("sessionId").notNull(),
+    documentId: int("documentId").notNull(),
+    promptVersion: varchar("promptVersion", { length: 64 }).notNull(),
+    draftJson: json("draftJson"),
+    status: mysqlEnum("status", ["analysis_requested", "draft_ready", "under_review", "approved_for_audio", "withheld_for_review"]).default("analysis_requested").notNull(),
+    sourceSetConfirmed: boolean("sourceSetConfirmed").default(false).notNull(),
+    requestedByUserId: int("requestedByUserId").notNull(),
+    reviewedByUserId: int("reviewedByUserId"),
+    reviewedAt: datetime("reviewedAt"),
+    statusReason: text("statusReason"),
+    isTestMode: boolean("isTestMode").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("chamber_intelligence_session_idx").on(table.sessionId),
+    index("chamber_intelligence_document_idx").on(table.documentId),
+    index("chamber_intelligence_status_idx").on(table.status),
+    index("chamber_intelligence_test_idx").on(table.isTestMode),
+  ],
+);
+
 export const chamberAuditLog = mysqlTable(
   "chamber_audit_log",
   {

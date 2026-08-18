@@ -18,6 +18,7 @@ describe("developmental profile consent controls", () => {
       consentVersion: null,
       shouldRetainVoluntaryDevelopmentData: false,
       shouldClearCommunitySelections: true,
+      shouldClearVoluntaryDevelopmentHistory: true,
     });
   });
 });
