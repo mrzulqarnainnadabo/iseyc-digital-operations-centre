@@ -31,6 +31,12 @@ describe("DOC router access controls", () => {
     await expect(caller.development.governanceQueue()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("blocks a non-administrator from direct participation confirmation and mentorship approval routes", async () => {
+    const caller = appRouter.createCaller(contextFor(user({ role: "user", docRole: "officer" })));
+    await expect(caller.development.confirmParticipationRecord({ participationId: 13 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.development.approveMentorship({ relationshipId: 21, mentorUserId: 8, agreedFocus: "Attempted direct approval" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("blocks an unauthorised account from the Digital Chamber session register", async () => {
     const caller = appRouter.createCaller(contextFor(user({ isAuthorizedOfficer: false })));
     await expect(caller.chamber.sessions({ isTestMode: false })).rejects.toMatchObject({ code: "FORBIDDEN" });

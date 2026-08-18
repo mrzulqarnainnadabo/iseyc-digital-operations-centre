@@ -41,8 +41,8 @@
 - [x] Define a private, National President-only Presidential Command layer with the Command Brief as the top operational element.
 - [x] Extend sign-in profiles into consent-based developmental profiles supporting mentorship, guidance, participation history, and growth planning.
 - [x] Model the ISEYC 4-tier grassroots structure and 7 Responsibility Pillars as governed community-intelligence systems.
-- [ ] Define key departments as intelligent development environments for AI-shaped civic and community contribution.
-- [ ] Define the Civic Brain connection and a controlled national awareness layer spanning National Assembly, federal, state, and local developments.
+- [x] Define key departments as intelligent development environments for AI-shaped civic and community contribution.
+- [x] Define the Civic Brain connection and a controlled national awareness layer spanning National Assembly, federal, state, and local developments.
 - [x] Integrate the supplied official ISEYC logo into the application-owned identity system.
 - [x] Preserve draft-only, human-approved Media & Content Command behaviour for all posts, replies, and outreach.
 - [x] Produce the revised DOC information architecture and a phased, controlled next build recommendation.
@@ -60,8 +60,8 @@
 - [x] Add Vitest coverage for developmental participation confirmation, mentorship approval, and mentorship check-in authorization safeguards.
 - [x] Add service or router Vitest coverage for participation confirmation, mentorship approval, and check-in persistence and authorization paths.
 - [x] Verify developmental governance access controls and member-to-admin workflow paths end to end before review checkpointing.
-- [ ] Exercise the complete member-to-admin developmental workflow through participation submission, confirmation, mentorship request, approval, and check-in recording.
-- [ ] Verify unauthorized direct-route behaviour for development governance before the post-foundation review checkpoint.
+- [x] Exercise the complete member-to-admin developmental workflow through participation submission, confirmation, mentorship request, approval, and check-in recording.
+- [x] Verify unauthorized direct-route behaviour for development governance before the post-foundation review checkpoint.
 - [x] Assess existing Meeting & Decision Tracker safeguards and records capabilities for Digital Chamber reuse.
 - [x] Define Digital Chamber sessions, participant role visibility, internal and visitor access, document intelligence, audio explanation, and governance boundaries.
 - [x] Produce a phased Digital Chamber delivery plan that preserves draft-only records, human approval, audit, test isolation, and private Presidential access.
@@ -86,3 +86,5 @@
 - [x] Add direct Chamber tRPC session-detail tests proving responses do not expose mixed-scope participants, audit entries, or documents.
 - [x] Add direct Chamber router-contract tests for live and test document uploads and tracker handoffs, including explicit cross-scope rejection for each contract.
 - [x] Add direct Chamber router-contract tests that filter intentionally mixed participant, audit, and document fixtures from session-detail responses.
+- [ ] Capture stronger production-domain identity evidence showing the ISEYC logo, slogan, and absence of application-level third-party branding.
+- [ ] Save distinct post-upgrade DOC identity and post-foundation developmental-topology checkpoints with their review scope stated explicitly.
