@@ -8,6 +8,8 @@ The deployment host domain and platform runtime metadata are host-level infrastr
 
 The browser renderer did not return a usable visual capture for the production domain and, in a direct browser-DOM check, reported an empty rendered root despite the correct page title. Production runtime logs showed normal server startup and expected unauthenticated requests, with no server-side error. The controlled review therefore relies on the production title and metadata, plus the locally verified production-equivalent entry surface, while a fresh production checkpoint will be used to retry rendered capture.
 
+After the dedicated post-foundation checkpoint, the production URL was revisited. It continued to return the **ISEYC Digital Operations Centre** title, but the browser capture service again returned no usable screenshot or interactive DOM. This is treated as a capture-environment limitation rather than a claim of successful production visual rendering. The latest checkpoint preview is the available rendered evidence of the ISEYC logo, application-owned identity, and approved slogan surface.
+
 ## Digital Chamber review — 18 August 2026
 
 The Chamber register was verified at desktop and mobile widths. A controlled test-only Chamber session was created through the governed service flow and verified at desktop and mobile widths. The session room displayed the test boundary, role-sourced Chair identity, agenda, protected document desk, draft-only tracker handoff, participant roster, and audit record. No source document was uploaded and no tracker handoff or approval action was executed during visual review.
