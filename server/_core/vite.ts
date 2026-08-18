@@ -58,15 +58,17 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // Disable Express's default streamed index response. The transparent production proxy
-  // can acknowledge that stream while never completing the document body. Serving the
-  // small HTML bootstrap explicitly preserves static asset handling while ensuring the
-  // client application document has a complete, buffered response.
-  app.use(express.static(distPath, { index: false }));
-
-  // fall through to index.html if the file doesn't exist
+  // The transparent production proxy can acknowledge streamed static files while never
+  // completing their body. Buffering the requested asset and setting Content-Length
+  // explicitly keeps document, script, and stylesheet delivery deterministic.
   app.use("*", async (_req, res, next) => {
     try {
+      const requestPath = decodeURIComponent(_req.path);
+      const requestedFile = path.resolve(distPath, `.${requestPath}`);
+      if (requestedFile.startsWith(`${distPath}${path.sep}`) && fs.existsSync(requestedFile) && fs.statSync(requestedFile).isFile()) {
+        await sendStaticFile(res, requestedFile);
+        return;
+      }
       await sendStaticIndex(res, distPath);
     } catch (error) {
       next(error);
@@ -74,7 +76,21 @@ export function serveStatic(app: Express) {
   });
 }
 
-export async function sendStaticIndex(res: { status: (statusCode: number) => { type: (contentType: string) => { send: (body: string) => unknown } } }, distPath: string) {
-  const indexHtml = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
-  return res.status(200).type("html").send(indexHtml);
+export async function sendStaticIndex(res: { status: (statusCode: number) => { set: (headers: Record<string, string | number>) => { end: (body: Buffer) => unknown } } }, distPath: string) {
+  return sendStaticFile(res, path.resolve(distPath, "index.html"));
+}
+
+const staticMimeTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+};
+
+export async function sendStaticFile(res: { status: (statusCode: number) => { set: (headers: Record<string, string | number>) => { end: (body: Buffer) => unknown } } }, filePath: string) {
+  const body = await fs.promises.readFile(filePath);
+  const contentType = staticMimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+  return res.status(200).set({ "Content-Type": contentType, "Content-Length": body.byteLength }).end(body);
 }
