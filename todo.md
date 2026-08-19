@@ -115,3 +115,4 @@
 - [ ] Use the user-approved direct Personal Access Token method to push the complete codebase without using the GitHub connector.
 - [ ] Initiate and complete official GitHub account authorization for repository publication.
 - [ ] Publish the complete main branch through the connected official GitHub account and verify the remote revision.
+- [ ] Reconfirm repository visibility and write access after the GitHub connector authorization update.
