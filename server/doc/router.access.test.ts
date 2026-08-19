@@ -7,7 +7,7 @@ function contextFor(user: NonNullable<TrpcContext["user"]>): TrpcContext {
 }
 
 function user(overrides: Partial<NonNullable<TrpcContext["user"]>>) {
-  return { id: 14, openId: "doc-test-user", name: "DOC Test User", email: "doc@test.example", loginMethod: "manus", role: "user" as const, docRole: "officer" as const, isAuthorizedOfficer: true, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(), ...overrides };
+  return { id: 14, authUserId: "doc-test-user", name: "DOC Test User", email: "doc@test.example", loginMethod: "email", role: "user" as const, docRole: "officer" as const, isAuthorizedOfficer: true, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(), ...overrides };
 }
 
 describe("DOC router access controls", () => {

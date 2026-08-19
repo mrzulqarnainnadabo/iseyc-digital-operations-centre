@@ -1,5 +1,4 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { nationalPresidentProcedure, officerAdminProcedure, officerProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -41,11 +40,6 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
-    }),
   }),
   development: router({
     myProfile: protectedProcedure.query(({ ctx }) => getMyDevelopmentProfile(ctx.user.id)),
@@ -164,6 +158,11 @@ export const appRouter = router({
       confirmAction({ actionId: input.actionId, reviewerUserId: ctx.user.id, reviewerRole: ctx.user.role }),
     ),
     configureFallback: officerAdminProcedure.mutation(async ({ ctx }) => {
+      // Legacy Manus Forge cron *registration* (Phase 6 scope). Since Supabase
+      // Auth (Phase 2) no longer issues the old app_session_id cookie, this
+      // will read as "" and createHeartbeatJob() falls back to the project
+      // owner identity — harmless, matches prior shared-resource behavior,
+      // and is fully replaced when Phase 6 migrates this to Vercel Cron.
       const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
       const job = await createHeartbeatJob({
         name: "ise yc-meeting-fallback".replace(" ", ""),

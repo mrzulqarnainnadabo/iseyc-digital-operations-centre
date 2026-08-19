@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
+import { authenticateSupabaseRequest } from "./supabaseAuth";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -14,9 +14,12 @@ export async function createContext(
   let user: User | null = null;
 
   try {
-    user = await sdk.authenticateRequest(opts.req);
+    user = await authenticateSupabaseRequest(opts.req);
   } catch (error) {
-    // Authentication is optional for public procedures.
+    // Authentication is optional for public procedures (auth.me, etc.).
+    // Note: the scheduled meeting-fallback cron callback is NOT authenticated
+    // here — it's a plain Express route (not tRPC) verified separately by
+    // server/_core/sdk.ts's cronAuth. See server/_core/index.ts.
     user = null;
   }
 

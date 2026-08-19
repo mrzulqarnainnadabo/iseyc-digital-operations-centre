@@ -19,8 +19,8 @@ export async function getDb() {
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
+  if (!user.authUserId) {
+    throw new Error("User authUserId is required for upsert");
   }
 
   const db = await getDb();
@@ -31,7 +31,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   try {
     const values: InsertUser = {
-      openId: user.openId,
+      authUserId: user.authUserId,
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -55,7 +55,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (user.authUserId === ENV.ownerAuthUserId) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
@@ -63,7 +63,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.isAuthorizedOfficer !== undefined) {
       values.isAuthorizedOfficer = user.isAuthorizedOfficer;
       updateSet.isAuthorizedOfficer = user.isAuthorizedOfficer;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (user.authUserId === ENV.ownerAuthUserId) {
       values.isAuthorizedOfficer = true;
       updateSet.isAuthorizedOfficer = true;
     }
@@ -71,7 +71,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.docRole !== undefined) {
       values.docRole = user.docRole;
       updateSet.docRole = user.docRole;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (user.authUserId === ENV.ownerAuthUserId) {
       values.docRole = "national_president";
       updateSet.docRole = "national_president";
     }
@@ -88,7 +88,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
 
-    const persisted = await db.select({ id: users.id }).from(users).where(eq(users.openId, user.openId)).limit(1);
+    const persisted = await db.select({ id: users.id }).from(users).where(eq(users.authUserId, user.authUserId)).limit(1);
     if (persisted[0]) {
       await db.insert(developmentalProfiles).values({ userId: persisted[0].id }).onDuplicateKeyUpdate({
         set: { userId: persisted[0].id },
@@ -100,14 +100,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
-export async function getUserByOpenId(openId: string) {
+export async function getUserByAuthUserId(authUserId: string) {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db.select().from(users).where(eq(users.authUserId, authUserId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }

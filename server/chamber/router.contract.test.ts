@@ -23,9 +23,9 @@ vi.mock("../meeting/service", () => meetingMocks);
 import { appRouter } from "../routers";
 
 function contextFor(user: NonNullable<TrpcContext["user"]>): TrpcContext { return { user, req: { protocol: "https", headers: {} } as TrpcContext["req"], res: {} as TrpcContext["res"] }; }
-function officer() { return { id: 14, openId: "chamber-contract", name: "Chamber Officer", email: "officer@iseyc.example", loginMethod: "manus", role: "user" as const, docRole: "officer" as const, isAuthorizedOfficer: true, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() }; }
-function member() { return { ...officer(), id: 15, openId: "chamber-member", docRole: "member" as const, isAuthorizedOfficer: false }; }
-function administrator() { return { ...officer(), id: 16, openId: "chamber-admin", role: "admin" as const, docRole: "administrator" as const }; }
+function officer() { return { id: 14, authUserId: "chamber-contract", name: "Chamber Officer", email: "officer@iseyc.example", loginMethod: "email", role: "user" as const, docRole: "officer" as const, isAuthorizedOfficer: true, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() }; }
+function member() { return { ...officer(), id: 15, authUserId: "chamber-member", docRole: "member" as const, isAuthorizedOfficer: false }; }
+function administrator() { return { ...officer(), id: 16, authUserId: "chamber-admin", role: "admin" as const, docRole: "administrator" as const }; }
 
 describe("Digital Chamber router contracts", () => {
   beforeEach(() => {

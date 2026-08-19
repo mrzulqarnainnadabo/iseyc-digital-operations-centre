@@ -1,10 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { startLogin } from "@/const";
+import { AuthForm } from "./AuthForm";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -36,13 +36,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { loading, user, logout } = useAuth();
   useEffect(() => { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth)); }, [sidebarWidth]);
   if (loading) return <DashboardLayoutSkeleton />;
-  if (!user) return <AccessCard title="ISEYC Digital Operations Centre" description="Sign in with your authorised ISEYC account to begin a secure institutional and developmental journey." action="Sign in to continue" onClick={() => startLogin()} />;
-  if (!user.isAuthorizedOfficer) return <AccessCard title="ISEYC Digital Operations Centre" description="Your account is signed in. An ISEYC administrator must confirm the appropriate institutional role before operational modules become available." action="Sign out" onClick={logout} />;
+  if (!user) return <AccessCard title="ISEYC Digital Operations Centre" description="Sign in with your authorised ISEYC account to begin a secure institutional and developmental journey."><AuthForm /></AccessCard>;
+  if (!user.isAuthorizedOfficer) return <AccessCard title="ISEYC Digital Operations Centre" description="Your account is signed in. An ISEYC administrator must confirm the appropriate institutional role before operational modules become available."><Button onClick={logout} size="lg" className="mt-7 w-full bg-slate-950 text-white hover:bg-slate-800">Sign out</Button></AccessCard>;
   return <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}><LayoutContent setSidebarWidth={setSidebarWidth}>{children}</LayoutContent></SidebarProvider>;
 }
 
-function AccessCard({ title, description, action, onClick }: { title: string; description: string; action: string; onClick: () => void }) {
-  return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,#ecfdf5,transparent_38%),#f8fafc] p-6"><div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_30px_80px_-40px_rgba(15,23,42,.3)]"><img src={ISEYC_LOGO} alt="Official ISEYC logo" className="mx-auto h-16 w-16 rounded-2xl object-cover shadow-sm" /><p className="mt-6 text-xs font-bold uppercase tracking-[.16em] text-emerald-700">Institutional access</p><h1 className="mt-2 font-serif text-3xl text-slate-950">{title}</h1><p className="mt-3 text-sm leading-6 text-slate-600">{description}</p><Button onClick={onClick} size="lg" className="mt-7 w-full bg-slate-950 text-white hover:bg-slate-800">{action}</Button><p className="mt-5 text-xs text-slate-400">Empowering Youths, Shaping Communities.</p></div></div>;
+function AccessCard({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+  return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,#ecfdf5,transparent_38%),#f8fafc] p-6"><div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_30px_80px_-40px_rgba(15,23,42,.3)]"><img src={ISEYC_LOGO} alt="Official ISEYC logo" className="mx-auto h-16 w-16 rounded-2xl object-cover shadow-sm" /><p className="mt-6 text-xs font-bold uppercase tracking-[.16em] text-emerald-700">Institutional access</p><h1 className="mt-2 font-serif text-3xl text-slate-950">{title}</h1><p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>{children}<p className="mt-5 text-xs text-slate-400">Empowering Youths, Shaping Communities.</p></div></div>;
 }
 
 function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNode; setSidebarWidth: (value: number) => void }) {
