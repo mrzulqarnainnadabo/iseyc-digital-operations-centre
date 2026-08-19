@@ -110,9 +110,9 @@
 - [x] Verify direct Chamber session queries settle into an accessible session room or the existing unavailable-session recovery state after the request completes.
 - [x] Locally verify an authorised Chamber intelligence review state is visible only to a session manager.
 - [x] Locally verify the developmental governance interface after consent-withdrawal and role-boundary safeguards.
-- [ ] Publish the complete current ISEYC Digital Operations Centre codebase to the supplied private GitHub repository on the main branch.
-- [ ] Verify the published GitHub main branch points to the expected current project revision.
-- [ ] Use the user-approved direct Personal Access Token method to push the complete codebase without using the GitHub connector.
-- [ ] Initiate and complete official GitHub account authorization for repository publication.
-- [ ] Publish the complete main branch through the connected official GitHub account and verify the remote revision.
-- [ ] Reconfirm repository visibility and write access after the GitHub connector authorization update.
+- [x] Publish the complete current ISEYC Digital Operations Centre codebase to the supplied private GitHub repository on the main branch.
+- [x] Verify the published GitHub main branch points to the expected current project revision.
+- [x] Attempt the user-approved direct Personal Access Token push without storing the credential; GitHub rejected the token, so publication proceeded through the subsequently authorised official connector.
+- [x] Initiate and complete official GitHub account authorization for repository publication.
+- [x] Publish the complete main branch through the connected official GitHub account and verify the remote revision.
+- [x] Reconfirm repository visibility and write access after the GitHub connector authorization update.
