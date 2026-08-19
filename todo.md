@@ -113,3 +113,5 @@
 - [ ] Publish the complete current ISEYC Digital Operations Centre codebase to the supplied private GitHub repository on the main branch.
 - [ ] Verify the published GitHub main branch points to the expected current project revision.
 - [ ] Use the user-approved direct Personal Access Token method to push the complete codebase without using the GitHub connector.
+- [ ] Initiate and complete official GitHub account authorization for repository publication.
+- [ ] Publish the complete main branch through the connected official GitHub account and verify the remote revision.
