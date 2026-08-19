@@ -110,3 +110,6 @@
 - [x] Verify direct Chamber session queries settle into an accessible session room or the existing unavailable-session recovery state after the request completes.
 - [x] Locally verify an authorised Chamber intelligence review state is visible only to a session manager.
 - [x] Locally verify the developmental governance interface after consent-withdrawal and role-boundary safeguards.
+- [ ] Publish the complete current ISEYC Digital Operations Centre codebase to the supplied private GitHub repository on the main branch.
+- [ ] Verify the published GitHub main branch points to the expected current project revision.
+- [ ] Use the user-approved direct Personal Access Token method to push the complete codebase without using the GitHub connector.
