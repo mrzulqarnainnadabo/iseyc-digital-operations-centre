@@ -35,12 +35,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem(SIDEBAR_WIDTH_KEY)) || DEFAULT_WIDTH);
   const { loading, user, logout } = useAuth();
   useEffect(() => { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth)); }, [sidebarWidth]);
-  useEffect(() => {
-    const suppressHostBrandText = () => document.querySelectorAll("body *").forEach(node => {
-      if (node.textContent?.trim() === "Made with Manus" || node.textContent?.trim() === "Powered by Manus") (node as HTMLElement).style.display = "none";
-    });
-    suppressHostBrandText(); const observer = new MutationObserver(suppressHostBrandText); observer.observe(document.body, { childList: true, subtree: true, characterData: true }); return () => observer.disconnect();
-  }, []);
   if (loading) return <DashboardLayoutSkeleton />;
   if (!user) return <AccessCard title="ISEYC Digital Operations Centre" description="Sign in with your authorised ISEYC account to begin a secure institutional and developmental journey." action="Sign in to continue" onClick={() => startLogin()} />;
   if (!user.isAuthorizedOfficer) return <AccessCard title="ISEYC Digital Operations Centre" description="Your account is signed in. An ISEYC administrator must confirm the appropriate institutional role before operational modules become available." action="Sign out" onClick={logout} />;
