@@ -15,7 +15,7 @@ async function requireDb() {
 
 export async function ensureDevelopmentProfile(userId: number) {
   const db = await requireDb();
-  await db.insert(developmentalProfiles).values({ userId }).onDuplicateKeyUpdate({ set: { userId } });
+  await db.insert(developmentalProfiles).values({ userId }).onConflictDoUpdate({ target: developmentalProfiles.userId, set: { userId } });
   return (await db.select().from(developmentalProfiles).where(eq(developmentalProfiles.userId, userId)).limit(1))[0]!;
 }
 
@@ -71,7 +71,8 @@ export async function updateMyDevelopmentProfile(input: {
     developmentGoals: consentPolicy.shouldRetainVoluntaryDevelopmentData ? input.developmentGoals || null : null,
     mentoringPreference: consentPolicy.isActive ? input.mentoringPreference : "not_selected",
     profileStatus: consentPolicy.profileStatus,
-  }).onDuplicateKeyUpdate({
+  }).onConflictDoUpdate({
+    target: developmentalProfiles.userId,
     set: {
       consentStatus: input.consentStatus,
       consentedAt: consentPolicy.isActive ? new Date() : null,
@@ -112,8 +113,8 @@ export async function createGrowthPlan(input: { userId: number; focusPeriod: str
   const db = await requireDb();
   const profile = await ensureDevelopmentProfile(input.userId);
   if (profile.consentStatus !== "active") throw new Error("Activate your developmental profile before creating a growth plan.");
-  const result = await db.insert(developmentGrowthPlans).values({ ...input, status: "active" });
-  return { id: Number(result[0].insertId) };
+  const result = await db.insert(developmentGrowthPlans).values({ ...input, status: "active" }).returning({ id: developmentGrowthPlans.id });
+  return { id: result[0].id };
 }
 
 export async function requestMentorship(input: { userId: number; agreedFocus: string }) {
@@ -122,22 +123,22 @@ export async function requestMentorship(input: { userId: number; agreedFocus: st
   if (profile.consentStatus !== "active") throw new Error("Activate your developmental profile before requesting mentorship.");
   const existing = await db.select().from(mentorshipRelationships).where(and(eq(mentorshipRelationships.menteeUserId, input.userId), eq(mentorshipRelationships.status, "requested"))).limit(1);
   if (existing[0]) throw new Error("A mentorship request is already awaiting human review.");
-  const result = await db.insert(mentorshipRelationships).values({ menteeUserId: input.userId, status: "requested", agreedFocus: input.agreedFocus });
-  return { id: Number(result[0].insertId), status: "requested" as const };
+  const result = await db.insert(mentorshipRelationships).values({ menteeUserId: input.userId, status: "requested", agreedFocus: input.agreedFocus }).returning({ id: mentorshipRelationships.id });
+  return { id: result[0].id, status: "requested" as const };
 }
 
 export async function confirmParticipation(input: { userId: number; participationType: "meeting_contribution" | "community_contribution" | "development_reflection" | "department_activity"; title: string; detail?: string; sourceRecordId?: number; confirmedByUserId: number }) {
   const db = await requireDb();
-  const result = await db.insert(developmentParticipationRecords).values({ ...input, confirmedAt: new Date() });
-  return { id: Number(result[0].insertId) };
+  const result = await db.insert(developmentParticipationRecords).values({ ...input, confirmedAt: new Date() }).returning({ id: developmentParticipationRecords.id });
+  return { id: result[0].id };
 }
 
 export async function submitParticipation(input: { userId: number; participationType: "meeting_contribution" | "community_contribution" | "development_reflection" | "department_activity"; title: string; detail?: string }) {
   const db = await requireDb();
   const profile = await ensureDevelopmentProfile(input.userId);
   if (profile.consentStatus !== "active") throw new Error("Activate your developmental profile before submitting a contribution for confirmation.");
-  const result = await db.insert(developmentParticipationRecords).values(input);
-  return { id: Number(result[0].insertId), status: "awaiting_human_confirmation" as const };
+  const result = await db.insert(developmentParticipationRecords).values(input).returning({ id: developmentParticipationRecords.id });
+  return { id: result[0].id, status: "awaiting_human_confirmation" as const };
 }
 
 export async function confirmParticipationRecord(input: { participationId: number; confirmedByUserId: number }) {
@@ -182,6 +183,6 @@ export async function recordMentorshipCheckIn(input: { relationshipId: number; a
   const db = await requireDb();
   const relationship = (await db.select().from(mentorshipRelationships).where(eq(mentorshipRelationships.id, input.relationshipId)).limit(1))[0];
   if (!relationship || !canRecordMentorshipCheckIn({ status: relationship.status, menteeUserId: relationship.menteeUserId, mentorUserId: relationship.mentorUserId, actorUserId: input.actorUserId })) throw new Error("An active, human-approved mentorship relationship and an agreed mentor or mentee are required.");
-  const result = await db.insert(mentorshipCheckIns).values({ relationshipId: input.relationshipId, checkInDate: new Date(), memberReflection: input.memberReflection || null, mentorGuidance: input.mentorGuidance || null, nextStep: input.nextStep || null, recordedByUserId: input.actorUserId });
-  return { id: Number(result[0].insertId) };
+  const result = await db.insert(mentorshipCheckIns).values({ relationshipId: input.relationshipId, checkInDate: new Date(), memberReflection: input.memberReflection || null, mentorGuidance: input.mentorGuidance || null, nextStep: input.nextStep || null, recordedByUserId: input.actorUserId }).returning({ id: mentorshipCheckIns.id });
+  return { id: result[0].id };
 }

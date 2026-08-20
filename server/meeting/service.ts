@@ -61,10 +61,6 @@ export function assertChamberSourceOnlyFiles(files: ChamberTrackerSourceFile[]) 
   }
 }
 
-function asNumber(value: unknown) {
-  return Number(value);
-}
-
 function safeKeyPart(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 180) || "meeting-material";
 }
@@ -130,8 +126,8 @@ export async function storeSubmission(input: {
       submittedByUserId: input.submittedByUserId,
       consolidationEligibleAt: eligibleAt,
       authoritativePromptVersion: AUTHORITATIVE_PROMPT_VERSION,
-    });
-    submissionId = asNumber(result[0].insertId);
+    }).returning({ id: meetingSubmissions.id });
+    submissionId = result[0].id;
     await audit(submissionId, "submission_created", "Submission entered the consolidation window.", input.isTestMode, input.submittedByUserId);
   }
 
@@ -185,8 +181,8 @@ export async function createChamberTrackerDraftSubmission(input: {
     submittedByUserId: input.submittedByUserId,
     consolidationEligibleAt: new Date(Date.now() + settings.consolidationMinutes * 60_000),
     authoritativePromptVersion: AUTHORITATIVE_PROMPT_VERSION,
-  });
-  const submissionId = asNumber(result[0].insertId);
+  }).returning({ id: meetingSubmissions.id });
+  const submissionId = result[0].id;
   await db.insert(meetingFiles).values(input.files.map(file => ({
     submissionId,
     originalName: file.originalName,

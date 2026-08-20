@@ -21,7 +21,7 @@ function makeDb(records: unknown[][], updates: Array<Record<string, unknown>> = 
   return {
     select,
     update: vi.fn(() => ({ set: vi.fn((payload: Record<string, unknown>) => { updates.push(payload); return { where: vi.fn(async () => undefined) }; }) })),
-    insert: vi.fn(() => ({ values: vi.fn(async (payload: Record<string, unknown>) => { inserts.push(payload); return [{ insertId: 81 }]; }) })),
+    insert: vi.fn(() => ({ values: vi.fn((payload: Record<string, unknown>) => { inserts.push(payload); return Object.assign(Promise.resolve([{ id: 81 }]), { returning: vi.fn(async () => [{ id: 81 }]) }); }) })),
   } as any;
 }
 

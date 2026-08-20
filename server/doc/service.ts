@@ -35,8 +35,8 @@ export async function getDocOverview() {
 
 export async function createCommandBrief(input: { coverageStart: Date; coverageEnd: Date; sourceSummary: string; isTestMode: boolean; actorUserId: number }) {
   const db = await requireDb(); await ensureInstitutionalPrompts();
-  const result = await db.insert(commandBriefRuns).values({ coverageStart: input.coverageStart, coverageEnd: input.coverageEnd, sourceSummary: input.sourceSummary, isTestMode: input.isTestMode, generatedByUserId: input.actorUserId, status: "source_pending", promptVersion: COMMAND_BRIEF_PROMPT_VERSION });
-  const id = Number(result[0].insertId); await audit("presidential_command_brief", id, "brief_source_created", "Source material submitted for confidential draft briefing; no brief was sent or approved.", input.isTestMode, input.actorUserId); return id;
+  const result = await db.insert(commandBriefRuns).values({ coverageStart: input.coverageStart, coverageEnd: input.coverageEnd, sourceSummary: input.sourceSummary, isTestMode: input.isTestMode, generatedByUserId: input.actorUserId, status: "source_pending", promptVersion: COMMAND_BRIEF_PROMPT_VERSION }).returning({ id: commandBriefRuns.id });
+  const id = result[0].id; await audit("presidential_command_brief", id, "brief_source_created", "Source material submitted for confidential draft briefing; no brief was sent or approved.", input.isTestMode, input.actorUserId); return id;
 }
 
 export async function generateCommandBrief(id: number, input: { actorUserId: number; testOnly?: boolean }) {
@@ -59,8 +59,8 @@ function mediaSchema() { const s = { type: "string" }; const object = (propertie
 
 export async function createContentDraft(input: { title: string; requestType: RequestType; objective: string; intendedAudience: string; channels: string[]; sourceReference: string; sourceMaterial: string; sourceApprovalStatus: SourceApprovalStatus; sensitivity: "public" | "internal" | "confidential" | "restricted"; targetDate?: Date; isTestMode: boolean; actorUserId: number }) {
   const db = await requireDb(); await ensureInstitutionalPrompts();
-  const result = await db.insert(contentDrafts).values({ title: input.title, requestType: input.requestType, objective: input.objective, intendedAudience: input.intendedAudience, channelsJson: input.channels, sourceReference: input.sourceReference, sourceMaterial: input.sourceMaterial, sourceApprovalStatus: input.sourceApprovalStatus, sensitivity: input.sensitivity, status: input.sourceApprovalStatus === "restricted" ? "withheld_for_governance_review" : "source_pending_approval", contentOwnerUserId: input.actorUserId, targetDate: input.targetDate || null, isTestMode: input.isTestMode, publicationPerformed: false, promptVersion: MEDIA_AI_PROMPT_VERSION });
-  const id = Number(result[0].insertId); await audit("social_media_content_command", id, "content_source_created", "Content source created as a draft-only item; no external action was performed.", input.isTestMode, input.actorUserId); return id;
+  const result = await db.insert(contentDrafts).values({ title: input.title, requestType: input.requestType, objective: input.objective, intendedAudience: input.intendedAudience, channelsJson: input.channels, sourceReference: input.sourceReference, sourceMaterial: input.sourceMaterial, sourceApprovalStatus: input.sourceApprovalStatus, sensitivity: input.sensitivity, status: input.sourceApprovalStatus === "restricted" ? "withheld_for_governance_review" : "source_pending_approval", contentOwnerUserId: input.actorUserId, targetDate: input.targetDate || null, isTestMode: input.isTestMode, publicationPerformed: false, promptVersion: MEDIA_AI_PROMPT_VERSION }).returning({ id: contentDrafts.id });
+  const id = result[0].id; await audit("social_media_content_command", id, "content_source_created", "Content source created as a draft-only item; no external action was performed.", input.isTestMode, input.actorUserId); return id;
 }
 
 export async function generateContentDraft(id: number, input: { actorUserId: number; testOnly?: boolean }) {

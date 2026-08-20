@@ -50,8 +50,8 @@ export async function createChamberSession(input: { title: string; description?:
     status: "draft",
     isTestMode: input.isTestMode,
     createdByUserId: input.actor.id,
-  });
-  const sessionId = Number(result[0].insertId);
+  }).returning({ id: chamberSessions.id });
+  const sessionId = result[0].id;
   await db.insert(chamberParticipants).values({
     sessionId,
     userId: input.actor.id,
@@ -130,9 +130,9 @@ export async function addChamberParticipant(input: { sessionId: number; particip
     if (!input.visitorName || !input.visitorEmail) throw new Error("An authorised visitor requires a name and email address.");
     participant = { userId: null, invitedEmail: input.visitorEmail.trim().toLowerCase(), displayName: input.visitorName.trim(), officialPosition: "Authorised Visitor", participantType: "authorised_visitor" };
   }
-  const result = await db.insert(chamberParticipants).values({ sessionId: input.sessionId, ...participant, sessionRole: input.sessionRole, admissionStatus: "invited", isTestMode: session.isTestMode, addedByUserId: input.actor.id });
+  const result = await db.insert(chamberParticipants).values({ sessionId: input.sessionId, ...participant, sessionRole: input.sessionRole, admissionStatus: "invited", isTestMode: session.isTestMode, addedByUserId: input.actor.id }).returning({ id: chamberParticipants.id });
   await writeAudit({ sessionId: input.sessionId, actorUserId: input.actor.id, eventType: "participant_invited", detail: `${participant.displayName} added as ${participant.officialPosition}.`, isTestMode: session.isTestMode });
-  return { id: Number(result[0].insertId) };
+  return { id: result[0].id };
 }
 
 export async function setParticipantAdmission(input: { sessionId: number; participantId: number; admissionStatus: "admitted" | "declined" | "removed"; actor: Actor }) {
@@ -194,9 +194,9 @@ export async function uploadChamberDocument(input: { sessionId: number; original
     extractedText: input.sourceText?.slice(0, 120_000) || null,
     uploadedByUserId: input.actor.id,
     isTestMode: session.isTestMode,
-  });
+  }).returning({ id: chamberDocuments.id });
   await writeAudit({ sessionId: input.sessionId, actorUserId: input.actor.id, eventType: "document_uploaded", detail: `${input.originalName} added to the protected Chair document desk. Analysis remains ungenerated until human review controls are enabled.`, isTestMode: session.isTestMode });
-  return { id: Number(result[0].insertId), url: upload.url };
+  return { id: result[0].id, url: upload.url };
 }
 
 function chamberIntelligenceSchema() {
@@ -243,8 +243,8 @@ export async function requestChamberDocumentIntelligence(input: { sessionId: num
     requestedByUserId: input.actor.id,
     isTestMode: session.isTestMode,
     statusReason: "Chair-requested draft analysis. Human review remains required.",
-  });
-  const draftId = Number(request[0].insertId);
+  }).returning({ id: chamberDocumentIntelligenceDrafts.id });
+  const draftId = request[0].id;
   await db.update(chamberDocuments).set({ intelligenceStatus: "analysis_requested" }).where(eq(chamberDocuments.id, document.id));
   await writeAudit({ sessionId: input.sessionId, actorUserId: input.actor.id, eventType: "document_intelligence_requested", detail: `Draft-only document intelligence requested for ${document.originalName}. No decision, action, publication, or audio activation was performed.`, isTestMode: session.isTestMode });
   try {

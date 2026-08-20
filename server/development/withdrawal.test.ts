@@ -20,7 +20,7 @@ function makeDb() {
     return result;
   }) })) }));
   const del = vi.fn((table: { [key: string]: unknown }) => ({ where: vi.fn(async () => { deletes.push(String(Object.keys(table)[0] || "table")); }) }));
-  const insertValues = vi.fn(() => ({ onDuplicateKeyUpdate: vi.fn(async () => [{ insertId: 4 }]) }));
+  const insertValues = vi.fn(() => ({ onConflictDoUpdate: vi.fn(async () => [{ id: 4 }]) }));
   return { db: { select, insert: vi.fn(() => ({ values: insertValues })), delete: del }, deletes } as any;
 }
 

@@ -11,7 +11,7 @@ function makeDb(record: unknown, updates: Array<Record<string, unknown>>, insert
   return {
     select: vi.fn(() => ({ from: vi.fn(() => ({ where })) })),
     update: vi.fn(() => ({ set: vi.fn((payload: Record<string, unknown>) => { updates.push(payload); return { where: vi.fn(async () => undefined) }; }) })),
-    insert: vi.fn(() => ({ values: vi.fn(async (payload: Record<string, unknown>) => { inserts.push(payload); return [{ insertId: 91 }]; }) })),
+    insert: vi.fn(() => ({ values: vi.fn((payload: Record<string, unknown>) => { inserts.push(payload); return Object.assign(Promise.resolve([{ id: 91 }]), { returning: vi.fn(async () => [{ id: 91 }]) }); }) })),
   } as any;
 }
 
@@ -23,8 +23,10 @@ function makeWorkflowDb(records: unknown[][], updates: Array<Record<string, unkn
     update: vi.fn(() => ({ set: vi.fn((payload: Record<string, unknown>) => { updates.push(payload); return { where: vi.fn(async () => undefined) }; }) })),
     insert: vi.fn(() => ({ values: vi.fn((payload: Record<string, unknown>) => {
       inserts.push(payload);
-      const result = Promise.resolve([{ insertId: 100 + inserts.length }]) as Promise<Array<{ insertId: number }>> & { onDuplicateKeyUpdate?: (input: unknown) => Promise<Array<{ insertId: number }>> };
-      result.onDuplicateKeyUpdate = vi.fn(async () => result);
+      const row = { id: 100 + inserts.length };
+      const result = Promise.resolve([row]) as Promise<Array<{ id: number }>> & { returning?: (input: unknown) => Promise<Array<{ id: number }>>; onConflictDoUpdate?: (input: unknown) => Promise<Array<{ id: number }>> };
+      result.returning = vi.fn(async () => [row]);
+      result.onConflictDoUpdate = vi.fn(async () => [row]);
       return result;
     }) })),
   } as any;

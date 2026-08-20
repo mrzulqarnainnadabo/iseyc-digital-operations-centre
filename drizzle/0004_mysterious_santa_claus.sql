@@ -1,1 +1,0 @@
-ALTER TABLE `content_drafts` ADD `sourceMaterial` longtext NOT NULL;

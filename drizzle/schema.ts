@@ -1,28 +1,29 @@
 import {
   boolean,
-  datetime,
   index,
-  int,
-  json,
-  longtext,
-  mysqlEnum,
-  mysqlTable,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
   text,
   timestamp,
   varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+export const docRoleEnum = pgEnum("doc_role", ["member", "officer", "administrator", "presidential_council", "national_president"]);
+
+export const users = pgTable("users", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   authUserId: varchar("authUserId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  docRole: mysqlEnum("docRole", ["member", "officer", "administrator", "presidential_council", "national_president"]).default("member").notNull(),
+  role: userRoleEnum("role").default("user").notNull(),
+  docRole: docRoleEnum("docRole").default("member").notNull(),
   isAuthorizedOfficer: boolean("isAuthorizedOfficer").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -35,32 +36,32 @@ export const meetingStatusValues = [
   "needs_human_review",
   "blocked",
 ] as const;
+export const meetingSubmissionStatusEnum = pgEnum("meeting_submission_status", meetingStatusValues);
+export const meetingSubmissionSensitivityEnum = pgEnum("meeting_submission_sensitivity", ["public", "internal", "confidential", "restricted", "not_recorded"]);
 
-export const meetingSubmissions = mysqlTable(
+export const meetingSubmissions = pgTable(
   "meeting_submissions",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     meetingTitle: varchar("meetingTitle", { length: 512 }).notNull(),
     meetingDate: varchar("meetingDate", { length: 64 }),
     conveningBody: varchar("conveningBody", { length: 255 }),
-    sensitivity: mysqlEnum("sensitivity", ["public", "internal", "confidential", "restricted", "not_recorded"])
-      .default("internal")
-      .notNull(),
+    sensitivity: meetingSubmissionSensitivityEnum("sensitivity").default("internal").notNull(),
     sourceGroupKey: varchar("sourceGroupKey", { length: 160 }).notNull(),
     isTestMode: boolean("isTestMode").default(false).notNull(),
-    status: mysqlEnum("status", meetingStatusValues).default("pending_consolidation").notNull(),
+    status: meetingSubmissionStatusEnum("status").default("pending_consolidation").notNull(),
     statusReason: text("statusReason"),
-    submittedByUserId: int("submittedByUserId").notNull(),
-    approvedByUserId: int("approvedByUserId"),
-    approvedAt: datetime("approvedAt"),
-    consolidationEligibleAt: datetime("consolidationEligibleAt").notNull(),
-    processingAttemptedAt: datetime("processingAttemptedAt"),
-    recordJson: json("recordJson"),
+    submittedByUserId: integer("submittedByUserId").notNull(),
+    approvedByUserId: integer("approvedByUserId"),
+    approvedAt: timestamp("approvedAt"),
+    consolidationEligibleAt: timestamp("consolidationEligibleAt").notNull(),
+    processingAttemptedAt: timestamp("processingAttemptedAt"),
+    recordJson: jsonb("recordJson"),
     authoritativePromptVersion: varchar("authoritativePromptVersion", { length: 64 })
       .default("ISEYC-MDT-1.0")
       .notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [
     index("meeting_submission_status_idx").on(table.status),
@@ -71,45 +72,49 @@ export const meetingSubmissions = mysqlTable(
   ],
 );
 
-export const meetingFiles = mysqlTable(
+export const meetingFileDocumentTypeEnum = pgEnum("meeting_file_document_type", ["agenda", "minutes", "notes", "transcript", "decision_log", "action_list", "other"]);
+
+export const meetingFiles = pgTable(
   "meeting_files",
   {
-    id: int("id").autoincrement().primaryKey(),
-    submissionId: int("submissionId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    submissionId: integer("submissionId").notNull(),
     originalName: varchar("originalName", { length: 512 }).notNull(),
-    documentType: mysqlEnum("documentType", ["agenda", "minutes", "notes", "transcript", "decision_log", "action_list", "other"])
-      .default("other")
-      .notNull(),
+    documentType: meetingFileDocumentTypeEnum("documentType").default("other").notNull(),
     mimeType: varchar("mimeType", { length: 255 }).notNull(),
-    fileSizeBytes: int("fileSizeBytes").notNull(),
+    fileSizeBytes: integer("fileSizeBytes").notNull(),
     storageKey: varchar("storageKey", { length: 1024 }).notNull(),
     storageUrl: varchar("storageUrl", { length: 1024 }).notNull(),
-    extractedText: longtext("extractedText"),
-    uploadedByUserId: int("uploadedByUserId").notNull(),
+    extractedText: text("extractedText"),
+    uploadedByUserId: integer("uploadedByUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("meeting_file_submission_idx").on(table.submissionId)],
 );
 
-export const meetingRecordReviews = mysqlTable(
+export const meetingRecordReviewDecisionEnum = pgEnum("meeting_record_review_decision", ["approved", "revision_requested", "rejected"]);
+
+export const meetingRecordReviews = pgTable(
   "meeting_record_reviews",
   {
-    id: int("id").autoincrement().primaryKey(),
-    submissionId: int("submissionId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    submissionId: integer("submissionId").notNull(),
     sectionKey: varchar("sectionKey", { length: 100 }).notNull(),
-    decision: mysqlEnum("decision", ["approved", "revision_requested", "rejected"]).notNull(),
+    decision: meetingRecordReviewDecisionEnum("decision").notNull(),
     reviewNote: text("reviewNote"),
-    reviewerUserId: int("reviewerUserId").notNull(),
+    reviewerUserId: integer("reviewerUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("meeting_review_submission_idx").on(table.submissionId)],
 );
 
-export const meetingActionItems = mysqlTable(
+export const meetingActionItemConfirmationStatusEnum = pgEnum("meeting_action_item_confirmation_status", ["draft", "confirmed"]);
+
+export const meetingActionItems = pgTable(
   "meeting_action_items",
   {
-    id: int("id").autoincrement().primaryKey(),
-    submissionId: int("submissionId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    submissionId: integer("submissionId").notNull(),
     actionDescription: text("actionDescription").notNull(),
     accountableOwner: varchar("accountableOwner", { length: 255 }).notNull(),
     supportingParties: text("supportingParties"),
@@ -117,21 +122,21 @@ export const meetingActionItems = mysqlTable(
     sourceStatus: varchar("sourceStatus", { length: 64 }).notNull(),
     dependency: text("dependency"),
     evidenceLocation: varchar("evidenceLocation", { length: 512 }),
-    confirmationStatus: mysqlEnum("confirmationStatus", ["draft", "confirmed"]).default("draft").notNull(),
-    confirmedByUserId: int("confirmedByUserId"),
-    confirmedAt: datetime("confirmedAt"),
+    confirmationStatus: meetingActionItemConfirmationStatusEnum("confirmationStatus").default("draft").notNull(),
+    confirmedByUserId: integer("confirmedByUserId"),
+    confirmedAt: timestamp("confirmedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("meeting_action_submission_idx").on(table.submissionId)],
 );
 
-export const meetingAuditLog = mysqlTable(
+export const meetingAuditLog = pgTable(
   "meeting_audit_log",
   {
-    id: int("id").autoincrement().primaryKey(),
-    submissionId: int("submissionId").notNull(),
-    actorUserId: int("actorUserId"),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    submissionId: integer("submissionId").notNull(),
+    actorUserId: integer("actorUserId"),
     eventType: varchar("eventType", { length: 100 }).notNull(),
     detail: text("detail"),
     isTestMode: boolean("isTestMode").default(false).notNull(),
@@ -140,85 +145,92 @@ export const meetingAuditLog = mysqlTable(
   table => [index("meeting_audit_submission_idx").on(table.submissionId)],
 );
 
-export const meetingAutomationSettings = mysqlTable("meeting_automation_settings", {
+export const meetingAutomationSettings = pgTable("meeting_automation_settings", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  consolidationMinutes: int("consolidationMinutes").default(12).notNull(),
+  consolidationMinutes: integer("consolidationMinutes").default(12).notNull(),
   fallbackCronExpression: varchar("fallbackCronExpression", { length: 64 }).default("0 */15 * * * *").notNull(),
   fallbackCronTaskUid: varchar("fallbackCronTaskUid", { length: 65 }),
   fallbackEnabled: boolean("fallbackEnabled").default(false).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export const institutionalPrompts = mysqlTable(
+export const institutionalPrompts = pgTable(
   "institutional_prompts",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     promptKey: varchar("promptKey", { length: 100 }).notNull(),
     version: varchar("version", { length: 64 }).notNull(),
-    content: longtext("content").notNull(),
+    content: text("content").notNull(),
     isActive: boolean("isActive").default(true).notNull(),
-    updatedByUserId: int("updatedByUserId"),
+    updatedByUserId: integer("updatedByUserId"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("institutional_prompt_key_idx").on(table.promptKey), index("institutional_prompt_active_idx").on(table.isActive)],
 );
 
-export const commandBriefRuns = mysqlTable(
+export const commandBriefRunStatusEnum = pgEnum("command_brief_run_status", ["source_pending", "draft_ready", "under_review", "approved_for_internal_use", "withheld_for_review", "archived"]);
+
+export const commandBriefRuns = pgTable(
   "command_brief_runs",
   {
-    id: int("id").autoincrement().primaryKey(),
-    coverageStart: datetime("coverageStart").notNull(),
-    coverageEnd: datetime("coverageEnd").notNull(),
-    sourceSummary: longtext("sourceSummary").notNull(),
-    draftBody: longtext("draftBody"),
-    status: mysqlEnum("status", ["source_pending", "draft_ready", "under_review", "approved_for_internal_use", "withheld_for_review", "archived"]).default("source_pending").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    coverageStart: timestamp("coverageStart").notNull(),
+    coverageEnd: timestamp("coverageEnd").notNull(),
+    sourceSummary: text("sourceSummary").notNull(),
+    draftBody: text("draftBody"),
+    status: commandBriefRunStatusEnum("status").default("source_pending").notNull(),
     isTestMode: boolean("isTestMode").default(false).notNull(),
-    generatedByUserId: int("generatedByUserId").notNull(),
-    reviewedByUserId: int("reviewedByUserId"),
-    reviewedAt: datetime("reviewedAt"),
+    generatedByUserId: integer("generatedByUserId").notNull(),
+    reviewedByUserId: integer("reviewedByUserId"),
+    reviewedAt: timestamp("reviewedAt"),
     statusReason: text("statusReason"),
     promptVersion: varchar("promptVersion", { length: 64 }).default("ISEYC-PCB-DOC-1.0").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("command_brief_status_idx").on(table.status), index("command_brief_test_idx").on(table.isTestMode), index("command_brief_created_idx").on(table.createdAt)],
 );
 
-export const contentDrafts = mysqlTable(
+export const contentDraftRequestTypeEnum = pgEnum("content_draft_request_type", ["platform_draft", "response_suggestion", "outreach_research", "calendar_item", "internal_brief"]);
+export const contentDraftSourceApprovalStatusEnum = pgEnum("content_draft_source_approval_status", ["approved_external", "approved_internal", "pending_confirmation", "restricted"]);
+export const contentDraftSensitivityEnum = pgEnum("content_draft_sensitivity", ["public", "internal", "confidential", "restricted"]);
+export const contentDraftStatusEnum = pgEnum("content_draft_status", ["research_requested", "source_pending_approval", "draft_ready", "revision_requested", "approved_for_publication", "withheld_for_governance_review", "archived"]);
+
+export const contentDrafts = pgTable(
   "content_drafts",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     title: varchar("title", { length: 512 }).notNull(),
-    requestType: mysqlEnum("requestType", ["platform_draft", "response_suggestion", "outreach_research", "calendar_item", "internal_brief"]).notNull(),
+    requestType: contentDraftRequestTypeEnum("requestType").notNull(),
     objective: text("objective").notNull(),
     intendedAudience: varchar("intendedAudience", { length: 255 }).notNull(),
-    channelsJson: json("channelsJson").notNull(),
+    channelsJson: jsonb("channelsJson").notNull(),
     sourceReference: text("sourceReference").notNull(),
-    sourceMaterial: longtext("sourceMaterial").notNull(),
-    sourceApprovalStatus: mysqlEnum("sourceApprovalStatus", ["approved_external", "approved_internal", "pending_confirmation", "restricted"]).default("pending_confirmation").notNull(),
-    sensitivity: mysqlEnum("sensitivity", ["public", "internal", "confidential", "restricted"]).default("internal").notNull(),
-    status: mysqlEnum("status", ["research_requested", "source_pending_approval", "draft_ready", "revision_requested", "approved_for_publication", "withheld_for_governance_review", "archived"]).default("source_pending_approval").notNull(),
-    draftJson: json("draftJson"),
-    contentOwnerUserId: int("contentOwnerUserId").notNull(),
-    requiredReviewerUserId: int("requiredReviewerUserId"),
-    targetDate: datetime("targetDate"),
+    sourceMaterial: text("sourceMaterial").notNull(),
+    sourceApprovalStatus: contentDraftSourceApprovalStatusEnum("sourceApprovalStatus").default("pending_confirmation").notNull(),
+    sensitivity: contentDraftSensitivityEnum("sensitivity").default("internal").notNull(),
+    status: contentDraftStatusEnum("status").default("source_pending_approval").notNull(),
+    draftJson: jsonb("draftJson"),
+    contentOwnerUserId: integer("contentOwnerUserId").notNull(),
+    requiredReviewerUserId: integer("requiredReviewerUserId"),
+    targetDate: timestamp("targetDate"),
     isTestMode: boolean("isTestMode").default(false).notNull(),
     publicationPerformed: boolean("publicationPerformed").default(false).notNull(),
     promptVersion: varchar("promptVersion", { length: 64 }).default("ISEYC-MEDIA-DOC-1.0").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("content_draft_status_idx").on(table.status), index("content_draft_test_idx").on(table.isTestMode), index("content_draft_owner_idx").on(table.contentOwnerUserId)],
 );
 
-export const docAuditLog = mysqlTable(
+export const docAuditLog = pgTable(
   "doc_audit_log",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     moduleKey: varchar("moduleKey", { length: 100 }).notNull(),
-    recordId: int("recordId").notNull(),
-    actorUserId: int("actorUserId"),
+    recordId: integer("recordId").notNull(),
+    actorUserId: integer("actorUserId"),
     eventType: varchar("eventType", { length: 100 }).notNull(),
     detail: text("detail"),
     isTestMode: boolean("isTestMode").default(false).notNull(),
@@ -227,250 +239,279 @@ export const docAuditLog = mysqlTable(
   table => [index("doc_audit_module_record_idx").on(table.moduleKey, table.recordId), index("doc_audit_created_idx").on(table.createdAt)],
 );
 
-export const developmentalProfiles = mysqlTable(
+export const visibilityLevelEnum = pgEnum("visibility_level", ["private", "mentor_guided", "institutional_limited"]);
+export const developmentalProfileConsentStatusEnum = pgEnum("developmental_profile_consent_status", ["not_requested", "active", "withdrawn"]);
+export const developmentalProfileMentoringPreferenceEnum = pgEnum("developmental_profile_mentoring_preference", ["not_selected", "open_to_mentoring", "seeking_mentor", "mentoring_others", "not_now"]);
+export const developmentalProfileStatusEnum = pgEnum("developmental_profile_status", ["not_started", "active", "paused"]);
+
+export const developmentalProfiles = pgTable(
   "developmental_profiles",
   {
-    userId: int("userId").primaryKey(),
-    consentStatus: mysqlEnum("consentStatus", ["not_requested", "active", "withdrawn"]).default("not_requested").notNull(),
-    consentedAt: datetime("consentedAt"),
+    userId: integer("userId").primaryKey(),
+    consentStatus: developmentalProfileConsentStatusEnum("consentStatus").default("not_requested").notNull(),
+    consentedAt: timestamp("consentedAt"),
     consentVersion: varchar("consentVersion", { length: 64 }),
-    visibilityLevel: mysqlEnum("visibilityLevel", ["private", "mentor_guided", "institutional_limited"]).default("private").notNull(),
-    developmentDirection: json("developmentDirection"),
+    visibilityLevel: visibilityLevelEnum("visibilityLevel").default("private").notNull(),
+    developmentDirection: jsonb("developmentDirection"),
     developmentGoals: text("developmentGoals"),
-    mentoringPreference: mysqlEnum("mentoringPreference", ["not_selected", "open_to_mentoring", "seeking_mentor", "mentoring_others", "not_now"]).default("not_selected").notNull(),
-    mentorUserId: int("mentorUserId"),
-    profileStatus: mysqlEnum("profileStatus", ["not_started", "active", "paused"]).default("not_started").notNull(),
+    mentoringPreference: developmentalProfileMentoringPreferenceEnum("mentoringPreference").default("not_selected").notNull(),
+    mentorUserId: integer("mentorUserId"),
+    profileStatus: developmentalProfileStatusEnum("profileStatus").default("not_started").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("developmental_profile_consent_idx").on(table.consentStatus), index("developmental_profile_mentor_idx").on(table.mentorUserId)],
 );
 
-export const communityTiers = mysqlTable(
+export const communityTiers = pgTable(
   "community_tiers",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     tierKey: varchar("tierKey", { length: 80 }).notNull().unique(),
     name: varchar("name", { length: 160 }).notNull().unique(),
-    hierarchyOrder: int("hierarchyOrder").notNull(),
+    hierarchyOrder: integer("hierarchyOrder").notNull(),
     description: text("description"),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("community_tier_order_idx").on(table.hierarchyOrder)],
 );
 
-export const responsibilityPillars = mysqlTable(
+export const responsibilityPillars = pgTable(
   "responsibility_pillars",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     pillarKey: varchar("pillarKey", { length: 100 }).notNull().unique(),
     name: varchar("name", { length: 200 }).notNull().unique(),
-    responsibilityOrder: int("responsibilityOrder").notNull(),
+    responsibilityOrder: integer("responsibilityOrder").notNull(),
     description: text("description"),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("responsibility_pillar_order_idx").on(table.responsibilityOrder)],
 );
 
-export const communityUnits = mysqlTable(
+export const communityUnitStatusEnum = pgEnum("community_unit_status", ["draft", "active", "paused", "archived"]);
+
+export const communityUnits = pgTable(
   "community_units",
   {
-    id: int("id").autoincrement().primaryKey(),
-    tierId: int("tierId").notNull(),
-    parentUnitId: int("parentUnitId"),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    tierId: integer("tierId").notNull(),
+    parentUnitId: integer("parentUnitId"),
     name: varchar("name", { length: 255 }).notNull(),
     locality: varchar("locality", { length: 255 }),
-    accountableLeadUserId: int("accountableLeadUserId"),
-    status: mysqlEnum("status", ["draft", "active", "paused", "archived"]).default("draft").notNull(),
+    accountableLeadUserId: integer("accountableLeadUserId"),
+    status: communityUnitStatusEnum("status").default("draft").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("community_unit_tier_idx").on(table.tierId), index("community_unit_parent_idx").on(table.parentUnitId), index("community_unit_status_idx").on(table.status)],
 );
 
-export const memberCommunityAffiliations = mysqlTable(
+export const memberCommunityAffiliationStatusEnum = pgEnum("member_community_affiliation_status", ["self_declared", "confirmed", "inactive"]);
+
+export const memberCommunityAffiliations = pgTable(
   "member_community_affiliations",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    communityUnitId: int("communityUnitId"),
-    tierId: int("tierId").notNull(),
-    affiliationStatus: mysqlEnum("affiliationStatus", ["self_declared", "confirmed", "inactive"]).default("self_declared").notNull(),
-    confirmedByUserId: int("confirmedByUserId"),
-    confirmedAt: datetime("confirmedAt"),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer("userId").notNull(),
+    communityUnitId: integer("communityUnitId"),
+    tierId: integer("tierId").notNull(),
+    affiliationStatus: memberCommunityAffiliationStatusEnum("affiliationStatus").default("self_declared").notNull(),
+    confirmedByUserId: integer("confirmedByUserId"),
+    confirmedAt: timestamp("confirmedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("member_affiliation_user_idx").on(table.userId), index("member_affiliation_tier_idx").on(table.tierId), index("member_affiliation_unit_idx").on(table.communityUnitId)],
 );
 
-export const memberPillarFocuses = mysqlTable(
+export const memberPillarFocusStatusEnum = pgEnum("member_pillar_focus_status", ["interested", "contributing", "mentored", "inactive"]);
+
+export const memberPillarFocuses = pgTable(
   "member_pillar_focuses",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    pillarId: int("pillarId").notNull(),
-    focusStatus: mysqlEnum("focusStatus", ["interested", "contributing", "mentored", "inactive"]).default("interested").notNull(),
-    visibilityLevel: mysqlEnum("visibilityLevel", ["private", "mentor_guided", "institutional_limited"]).default("private").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer("userId").notNull(),
+    pillarId: integer("pillarId").notNull(),
+    focusStatus: memberPillarFocusStatusEnum("focusStatus").default("interested").notNull(),
+    visibilityLevel: visibilityLevelEnum("visibilityLevel").default("private").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("member_pillar_user_idx").on(table.userId), index("member_pillar_pillar_idx").on(table.pillarId)],
 );
 
-export const developmentParticipationRecords = mysqlTable(
+export const developmentParticipationTypeEnum = pgEnum("development_participation_type", ["meeting_contribution", "community_contribution", "development_reflection", "department_activity"]);
+
+export const developmentParticipationRecords = pgTable(
   "development_participation_records",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    participationType: mysqlEnum("participationType", ["meeting_contribution", "community_contribution", "development_reflection", "department_activity"]).notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer("userId").notNull(),
+    participationType: developmentParticipationTypeEnum("participationType").notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     detail: text("detail"),
-    sourceRecordId: int("sourceRecordId"),
-    confirmedByUserId: int("confirmedByUserId"),
-    confirmedAt: datetime("confirmedAt"),
+    sourceRecordId: integer("sourceRecordId"),
+    confirmedByUserId: integer("confirmedByUserId"),
+    confirmedAt: timestamp("confirmedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("development_participation_user_idx").on(table.userId), index("development_participation_confirmed_idx").on(table.confirmedAt)],
 );
 
-export const mentorshipRelationships = mysqlTable(
+export const mentorshipRelationshipStatusEnum = pgEnum("mentorship_relationship_status", ["requested", "active", "paused", "completed", "declined"]);
+
+export const mentorshipRelationships = pgTable(
   "mentorship_relationships",
   {
-    id: int("id").autoincrement().primaryKey(),
-    menteeUserId: int("menteeUserId").notNull(),
-    mentorUserId: int("mentorUserId"),
-    status: mysqlEnum("status", ["requested", "active", "paused", "completed", "declined"]).default("requested").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    menteeUserId: integer("menteeUserId").notNull(),
+    mentorUserId: integer("mentorUserId"),
+    status: mentorshipRelationshipStatusEnum("status").default("requested").notNull(),
     agreedFocus: text("agreedFocus"),
-    approvedByUserId: int("approvedByUserId"),
-    approvedAt: datetime("approvedAt"),
+    approvedByUserId: integer("approvedByUserId"),
+    approvedAt: timestamp("approvedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("mentorship_mentee_idx").on(table.menteeUserId), index("mentorship_mentor_idx").on(table.mentorUserId), index("mentorship_status_idx").on(table.status)],
 );
 
-export const mentorshipCheckIns = mysqlTable(
+export const mentorshipCheckIns = pgTable(
   "mentorship_check_ins",
   {
-    id: int("id").autoincrement().primaryKey(),
-    relationshipId: int("relationshipId").notNull(),
-    checkInDate: datetime("checkInDate").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    relationshipId: integer("relationshipId").notNull(),
+    checkInDate: timestamp("checkInDate").notNull(),
     memberReflection: text("memberReflection"),
     mentorGuidance: text("mentorGuidance"),
     nextStep: text("nextStep"),
-    recordedByUserId: int("recordedByUserId").notNull(),
+    recordedByUserId: integer("recordedByUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("mentorship_checkin_relationship_idx").on(table.relationshipId), index("mentorship_checkin_date_idx").on(table.checkInDate)],
 );
 
-export const developmentGrowthPlans = mysqlTable(
+export const developmentGrowthPlanStatusEnum = pgEnum("development_growth_plan_status", ["draft", "active", "completed", "paused"]);
+
+export const developmentGrowthPlans = pgTable(
   "development_growth_plans",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer("userId").notNull(),
     focusPeriod: varchar("focusPeriod", { length: 120 }).notNull(),
     goalStatement: text("goalStatement").notNull(),
     nextAction: text("nextAction"),
     memberReflection: text("memberReflection"),
-    status: mysqlEnum("status", ["draft", "active", "completed", "paused"]).default("draft").notNull(),
+    status: developmentGrowthPlanStatusEnum("status").default("draft").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("growth_plan_user_idx").on(table.userId), index("growth_plan_status_idx").on(table.status)],
 );
 
 export const chamberSessionStatusValues = ["draft", "scheduled", "open", "closed", "cancelled", "archived"] as const;
+export const chamberSessionStatusEnum = pgEnum("chamber_session_status", chamberSessionStatusValues);
+export const chamberSessionTypeEnum = pgEnum("chamber_session_type", ["internal_meeting", "visitor_session", "seminar"]);
+export const chamberSessionSensitivityEnum = pgEnum("chamber_session_sensitivity", ["public", "internal", "confidential", "restricted"]);
+export const chamberSessionTrackerLinkStatusEnum = pgEnum("chamber_session_tracker_link_status", ["not_linked", "draft_requested", "linked"]);
 
-export const chamberSessions = mysqlTable(
+export const chamberSessions = pgTable(
   "chamber_sessions",
   {
-    id: int("id").autoincrement().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     title: varchar("title", { length: 512 }).notNull(),
     description: text("description"),
-    sessionType: mysqlEnum("sessionType", ["internal_meeting", "visitor_session", "seminar"]).notNull(),
+    sessionType: chamberSessionTypeEnum("sessionType").notNull(),
     conveningBody: varchar("conveningBody", { length: 255 }),
-    chairUserId: int("chairUserId").notNull(),
-    sensitivity: mysqlEnum("sensitivity", ["public", "internal", "confidential", "restricted"]).default("internal").notNull(),
-    agendaJson: json("agendaJson"),
-    scheduledStartAt: datetime("scheduledStartAt"),
-    scheduledEndAt: datetime("scheduledEndAt"),
-    status: mysqlEnum("status", chamberSessionStatusValues).default("draft").notNull(),
-    linkedMeetingSubmissionId: int("linkedMeetingSubmissionId"),
-    trackerLinkStatus: mysqlEnum("trackerLinkStatus", ["not_linked", "draft_requested", "linked"]).default("not_linked").notNull(),
+    chairUserId: integer("chairUserId").notNull(),
+    sensitivity: chamberSessionSensitivityEnum("sensitivity").default("internal").notNull(),
+    agendaJson: jsonb("agendaJson"),
+    scheduledStartAt: timestamp("scheduledStartAt"),
+    scheduledEndAt: timestamp("scheduledEndAt"),
+    status: chamberSessionStatusEnum("status").default("draft").notNull(),
+    linkedMeetingSubmissionId: integer("linkedMeetingSubmissionId"),
+    trackerLinkStatus: chamberSessionTrackerLinkStatusEnum("trackerLinkStatus").default("not_linked").notNull(),
     isTestMode: boolean("isTestMode").default(false).notNull(),
-    createdByUserId: int("createdByUserId").notNull(),
+    createdByUserId: integer("createdByUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("chamber_session_status_idx").on(table.status), index("chamber_session_chair_idx").on(table.chairUserId), index("chamber_session_test_idx").on(table.isTestMode), index("chamber_session_start_idx").on(table.scheduledStartAt)],
 );
 
-export const chamberParticipants = mysqlTable(
+export const chamberParticipantTypeEnum = pgEnum("chamber_participant_type", ["internal", "authorised_visitor"]);
+export const chamberParticipantSessionRoleEnum = pgEnum("chamber_participant_session_role", ["chair", "presenter", "participant", "observer"]);
+export const chamberParticipantAdmissionStatusEnum = pgEnum("chamber_participant_admission_status", ["invited", "admitted", "declined", "removed"]);
+
+export const chamberParticipants = pgTable(
   "chamber_participants",
   {
-    id: int("id").autoincrement().primaryKey(),
-    sessionId: int("sessionId").notNull(),
-    userId: int("userId"),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: integer("sessionId").notNull(),
+    userId: integer("userId"),
     invitedEmail: varchar("invitedEmail", { length: 320 }),
     displayName: varchar("displayName", { length: 255 }).notNull(),
     officialPosition: varchar("officialPosition", { length: 255 }).notNull(),
-    participantType: mysqlEnum("participantType", ["internal", "authorised_visitor"]).default("internal").notNull(),
-    sessionRole: mysqlEnum("sessionRole", ["chair", "presenter", "participant", "observer"]).default("participant").notNull(),
-    admissionStatus: mysqlEnum("admissionStatus", ["invited", "admitted", "declined", "removed"]).default("invited").notNull(),
-    admittedByUserId: int("admittedByUserId"),
-    admittedAt: datetime("admittedAt"),
-    joinedAt: datetime("joinedAt"),
-    leftAt: datetime("leftAt"),
+    participantType: chamberParticipantTypeEnum("participantType").default("internal").notNull(),
+    sessionRole: chamberParticipantSessionRoleEnum("sessionRole").default("participant").notNull(),
+    admissionStatus: chamberParticipantAdmissionStatusEnum("admissionStatus").default("invited").notNull(),
+    admittedByUserId: integer("admittedByUserId"),
+    admittedAt: timestamp("admittedAt"),
+    joinedAt: timestamp("joinedAt"),
+    leftAt: timestamp("leftAt"),
     isTestMode: boolean("isTestMode").default(false).notNull(),
-    addedByUserId: int("addedByUserId").notNull(),
+    addedByUserId: integer("addedByUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [index("chamber_participant_session_idx").on(table.sessionId), index("chamber_participant_user_idx").on(table.userId), index("chamber_participant_admission_idx").on(table.admissionStatus), index("chamber_participant_test_idx").on(table.isTestMode)],
 );
 
-export const chamberDocuments = mysqlTable(
+export const chamberDocumentIntelligenceStatusEnum = pgEnum("chamber_document_intelligence_status", ["source_ready", "analysis_requested", "analysis_draft_ready", "withheld_for_review"]);
+
+export const chamberDocuments = pgTable(
   "chamber_documents",
   {
-    id: int("id").autoincrement().primaryKey(),
-    sessionId: int("sessionId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: integer("sessionId").notNull(),
     originalName: varchar("originalName", { length: 512 }).notNull(),
     mimeType: varchar("mimeType", { length: 255 }).notNull(),
-    fileSizeBytes: int("fileSizeBytes").notNull(),
+    fileSizeBytes: integer("fileSizeBytes").notNull(),
     storageKey: varchar("storageKey", { length: 1024 }).notNull(),
     storageUrl: varchar("storageUrl", { length: 1024 }).notNull(),
-    extractedText: longtext("extractedText"),
-    intelligenceStatus: mysqlEnum("intelligenceStatus", ["source_ready", "analysis_requested", "analysis_draft_ready", "withheld_for_review"]).default("source_ready").notNull(),
-    uploadedByUserId: int("uploadedByUserId").notNull(),
+    extractedText: text("extractedText"),
+    intelligenceStatus: chamberDocumentIntelligenceStatusEnum("intelligenceStatus").default("source_ready").notNull(),
+    uploadedByUserId: integer("uploadedByUserId").notNull(),
     isTestMode: boolean("isTestMode").default(false).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("chamber_document_session_idx").on(table.sessionId), index("chamber_document_status_idx").on(table.intelligenceStatus), index("chamber_document_test_idx").on(table.isTestMode)],
 );
 
-export const chamberDocumentIntelligenceDrafts = mysqlTable(
+export const chamberDocumentIntelligenceDraftStatusEnum = pgEnum("chamber_document_intelligence_draft_status", ["analysis_requested", "draft_ready", "under_review", "approved_for_audio", "withheld_for_review"]);
+
+export const chamberDocumentIntelligenceDrafts = pgTable(
   "chamber_document_intelligence_drafts",
   {
-    id: int("id").autoincrement().primaryKey(),
-    sessionId: int("sessionId").notNull(),
-    documentId: int("documentId").notNull(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: integer("sessionId").notNull(),
+    documentId: integer("documentId").notNull(),
     promptVersion: varchar("promptVersion", { length: 64 }).notNull(),
-    draftJson: json("draftJson"),
-    status: mysqlEnum("status", ["analysis_requested", "draft_ready", "under_review", "approved_for_audio", "withheld_for_review"]).default("analysis_requested").notNull(),
+    draftJson: jsonb("draftJson"),
+    status: chamberDocumentIntelligenceDraftStatusEnum("status").default("analysis_requested").notNull(),
     sourceSetConfirmed: boolean("sourceSetConfirmed").default(false).notNull(),
-    requestedByUserId: int("requestedByUserId").notNull(),
-    reviewedByUserId: int("reviewedByUserId"),
-    reviewedAt: datetime("reviewedAt"),
+    requestedByUserId: integer("requestedByUserId").notNull(),
+    reviewedByUserId: integer("reviewedByUserId"),
+    reviewedAt: timestamp("reviewedAt"),
     statusReason: text("statusReason"),
     isTestMode: boolean("isTestMode").default(false).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   },
   table => [
     index("chamber_intelligence_session_idx").on(table.sessionId),
@@ -480,12 +521,12 @@ export const chamberDocumentIntelligenceDrafts = mysqlTable(
   ],
 );
 
-export const chamberAuditLog = mysqlTable(
+export const chamberAuditLog = pgTable(
   "chamber_audit_log",
   {
-    id: int("id").autoincrement().primaryKey(),
-    sessionId: int("sessionId").notNull(),
-    actorUserId: int("actorUserId"),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: integer("sessionId").notNull(),
+    actorUserId: integer("actorUserId"),
     eventType: varchar("eventType", { length: 100 }).notNull(),
     detail: text("detail"),
     isTestMode: boolean("isTestMode").default(false).notNull(),

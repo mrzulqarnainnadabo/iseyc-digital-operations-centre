@@ -17,7 +17,7 @@ function makeDb(record: unknown, updates: Array<Record<string, unknown>>) {
   return {
     select: vi.fn(() => ({ from: vi.fn(() => fromChain) })),
     update: vi.fn(() => ({ set: vi.fn((payload: Record<string, unknown>) => { updates.push(payload); return { where: vi.fn(async () => undefined) }; }) })),
-    insert: vi.fn(() => ({ values: vi.fn(async () => [{ insertId: 1 }]) })),
+    insert: vi.fn(() => ({ values: vi.fn(() => Object.assign(Promise.resolve([{ id: 1 }]), { returning: vi.fn(async () => [{ id: 1 }]) })) })),
   } as any;
 }
 
