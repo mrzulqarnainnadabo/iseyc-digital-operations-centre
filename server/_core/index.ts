@@ -33,7 +33,6 @@ async function createApp() {
   const app = express();
   const server = createServer(app);
 
-  // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
@@ -56,7 +55,6 @@ async function createApp() {
     }
   });
 
-  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -65,7 +63,6 @@ async function createApp() {
     })
   );
 
-  // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -75,41 +72,41 @@ async function createApp() {
   return { app, server };
 }
 
-async function startServer() {
-  const { app, server } = await createApp();
+// Create the app once
+let appInstance: express.Express | null = null;
 
-  // On Vercel (serverless) we must NOT call .listen()
-  // Vercel sets the VERCEL environment variable
-  if (process.env.VERCEL) {
-    console.log("[ISEYC] Running in Vercel serverless mode – skipping listen()");
-    return app;
+async function getApp() {
+  if (!appInstance) {
+    const { app, server } = await createApp();
+    appInstance = app;
+
+    // Only listen when NOT on Vercel
+    if (!process.env.VERCEL) {
+      const preferredPort = parseInt(process.env.PORT || "3000");
+      const port = await findAvailablePort(preferredPort);
+      if (port !== preferredPort) {
+        console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+      }
+      server.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}/`);
+      });
+    } else {
+      console.log("[ISEYC] Vercel serverless mode – no listen()");
+    }
   }
-
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-  });
-
-  return app;
+  return appInstance;
 }
 
-// For local development and traditional hosting
-const appPromise = startServer().catch(err => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
-
-// Export for Vercel serverless
+// Vercel serverless handler
 export default async function handler(req: any, res: any) {
-  const app = await appPromise;
+  const app = await getApp();
   return app(req, res);
 }
 
-// Also export the app promise for other consumers
-export { appPromise };
+// For local `node dist/index.js`
+if (!process.env.VERCEL) {
+  getApp().catch(err => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
+}
