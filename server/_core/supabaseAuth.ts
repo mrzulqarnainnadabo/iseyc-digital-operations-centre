@@ -1,12 +1,9 @@
 import { ForbiddenError } from "@shared/_core/errors";
+import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
-
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === "string" && value.length > 0;
 
 type SupabaseAccessTokenClaims = {
   sub: string;
@@ -23,95 +20,57 @@ function extractBearerToken(req: Request): string | null {
   return null;
 }
 
-function claimsFromPayload(payload: JWTPayload): SupabaseAccessTokenClaims | null {
-  const sub = payload.sub;
-  if (!isNonEmptyString(sub)) {
-    console.warn("[Auth] Supabase token missing sub claim");
-    return null;
-  }
-
-  return {
-    sub,
-    email: typeof payload.email === "string" ? payload.email : null,
-    user_metadata:
-      (payload.user_metadata as SupabaseAccessTokenClaims["user_metadata"]) ?? null,
-    app_metadata:
-      (payload.app_metadata as SupabaseAccessTokenClaims["app_metadata"]) ?? null,
-  };
-}
-
-/** Legacy HS256 secret (still works for older tokens). */
-async function verifyWithLegacySecret(token: string): Promise<SupabaseAccessTokenClaims | null> {
-  if (!ENV.supabaseJwtSecret) return null;
-  try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(ENV.supabaseJwtSecret), {
-      algorithms: ["HS256"],
-    });
-    return claimsFromPayload(payload);
-  } catch {
-    return null;
-  }
-}
-
 /**
- * New Supabase JWT Signing Keys (ECC / ES256 etc.) are verified via the
- * project's JWKS endpoint. This is the path for tokens issued after the
- * migration away from the single Legacy JWT Secret.
+ * Official Supabase verification: pass the access token to auth.getUser().
+ * This works for both legacy HS256 and new ECC (ES256) signing keys and does
+ * not require us to manage JWKS or algorithm allow-lists.
  */
-let _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
-
-function getJwks() {
-  if (_jwks) return _jwks;
-  const base = ENV.supabaseUrl.replace(/\/$/, "");
-  if (!base) {
+async function verifyWithSupabaseApi(
+  token: string
+): Promise<SupabaseAccessTokenClaims | null> {
+  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) {
     console.error(
-      "[Auth] SUPABASE_URL (or VITE_SUPABASE_URL) is not set — cannot verify ES256 tokens via JWKS."
+      "[Auth] SUPABASE_URL and SUPABASE_ANON_KEY (or VITE_* equivalents) must be set on the server."
     );
     return null;
   }
-  _jwks = createRemoteJWKSet(new URL(`${base}/auth/v1/.well-known/jwks.json`));
-  return _jwks;
-}
 
-async function verifyWithJwks(token: string): Promise<SupabaseAccessTokenClaims | null> {
-  const jwks = getJwks();
-  if (!jwks) return null;
   try {
-    const { payload } = await jwtVerify(token, jwks);
-    return claimsFromPayload(payload);
+    const supabase = createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) {
+      console.warn("[Auth] supabase.auth.getUser failed:", error?.message ?? "no user");
+      return null;
+    }
+
+    const u = data.user;
+    return {
+      sub: u.id,
+      email: u.email ?? null,
+      user_metadata: (u.user_metadata as SupabaseAccessTokenClaims["user_metadata"]) ?? null,
+      app_metadata: (u.app_metadata as SupabaseAccessTokenClaims["app_metadata"]) ?? null,
+    };
   } catch (error) {
-    console.warn("[Auth] JWKS token verification failed", String(error));
+    console.warn("[Auth] supabase.auth.getUser threw:", String(error));
     return null;
   }
-}
-
-async function verifySupabaseAccessToken(
-  token: string
-): Promise<SupabaseAccessTokenClaims | null> {
-  // Prefer JWKS (new ECC keys). Fall back to legacy HS256 secret.
-  const fromJwks = await verifyWithJwks(token);
-  if (fromJwks) return fromJwks;
-
-  const fromLegacy = await verifyWithLegacySecret(token);
-  if (fromLegacy) return fromLegacy;
-
-  console.warn(
-    "[Auth] Supabase token verification failed for both JWKS and legacy HS256 secret"
-  );
-  return null;
 }
 
 /**
  * Authenticate a request against a Supabase Auth access token (sent as
- * `Authorization: Bearer <access_token>` by the browser client — see
- * client/src/lib/supabaseClient.ts and client/src/main.tsx).
+ * `Authorization: Bearer <access_token>` by the browser client).
  *
- * On first sign-in for a given Supabase user, a corresponding row is
- * auto-provisioned in our own `users` table (default docRole="member",
- * isAuthorizedOfficer=false) — an ISEYC administrator or the National
- * President must then grant elevated access via Officer Access, exactly as
- * before. The single exception is ENV.ownerAuthUserId, which is bootstrapped
- * straight to National President on first sign-in (see server/db.ts).
+ * On first sign-in a row is auto-provisioned in our `users` table
+ * (default docRole="member", isAuthorizedOfficer=false). An administrator
+ * must then grant officer access. ENV.ownerAuthUserId is bootstrapped to
+ * National President on first sign-in.
  */
 export async function authenticateSupabaseRequest(req: Request): Promise<User> {
   const token = extractBearerToken(req);
@@ -119,7 +78,7 @@ export async function authenticateSupabaseRequest(req: Request): Promise<User> {
     throw ForbiddenError("Missing Supabase access token");
   }
 
-  const claims = await verifySupabaseAccessToken(token);
+  const claims = await verifyWithSupabaseApi(token);
   if (!claims) {
     throw ForbiddenError("Invalid or expired session");
   }
