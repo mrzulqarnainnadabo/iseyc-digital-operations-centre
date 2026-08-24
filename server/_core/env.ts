@@ -2,9 +2,16 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   isProduction: process.env.NODE_ENV === "production",
 
-  // Supabase Auth (Phase 2). Access tokens are verified locally against this
-  // secret (Supabase dashboard -> Project Settings -> API -> JWT Secret) so
-  // no network round-trip is needed per request.
+  // Supabase project URL (used for JWKS verification of new ECC-signed tokens).
+  // Prefer SUPABASE_URL; fall back to the Vite public URL if that is all that is set.
+  supabaseUrl:
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    "",
+
+  // Legacy HS256 JWT secret (Supabase Dashboard -> API -> Legacy JWT Secret).
+  // Still tried first for older tokens; new projects often issue ES256 tokens
+  // which are verified via JWKS instead.
   supabaseJwtSecret: process.env.SUPABASE_JWT_SECRET ?? "",
 
   // The Supabase auth user id (UUID) of the institution's National President
