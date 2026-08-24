@@ -1,6 +1,6 @@
 import { ForbiddenError } from "@shared/_core/errors";
 import type { Request } from "express";
-import { jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
@@ -23,40 +23,82 @@ function extractBearerToken(req: Request): string | null {
   return null;
 }
 
-function getSupabaseJwtSecretKey() {
-  if (!ENV.supabaseJwtSecret) {
-    console.error(
-      "[Auth] SUPABASE_JWT_SECRET is not configured. Set it to the value from " +
-        "Supabase Dashboard -> Project Settings -> API -> JWT Secret."
-    );
+function claimsFromPayload(payload: JWTPayload): SupabaseAccessTokenClaims | null {
+  const sub = payload.sub;
+  if (!isNonEmptyString(sub)) {
+    console.warn("[Auth] Supabase token missing sub claim");
+    return null;
   }
-  return new TextEncoder().encode(ENV.supabaseJwtSecret);
+
+  return {
+    sub,
+    email: typeof payload.email === "string" ? payload.email : null,
+    user_metadata:
+      (payload.user_metadata as SupabaseAccessTokenClaims["user_metadata"]) ?? null,
+    app_metadata:
+      (payload.app_metadata as SupabaseAccessTokenClaims["app_metadata"]) ?? null,
+  };
+}
+
+/** Legacy HS256 secret (still works for older tokens). */
+async function verifyWithLegacySecret(token: string): Promise<SupabaseAccessTokenClaims | null> {
+  if (!ENV.supabaseJwtSecret) return null;
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(ENV.supabaseJwtSecret), {
+      algorithms: ["HS256"],
+    });
+    return claimsFromPayload(payload);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * New Supabase JWT Signing Keys (ECC / ES256 etc.) are verified via the
+ * project's JWKS endpoint. This is the path for tokens issued after the
+ * migration away from the single Legacy JWT Secret.
+ */
+let _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function getJwks() {
+  if (_jwks) return _jwks;
+  const base = ENV.supabaseUrl.replace(/\/$/, "");
+  if (!base) {
+    console.error(
+      "[Auth] SUPABASE_URL (or VITE_SUPABASE_URL) is not set — cannot verify ES256 tokens via JWKS."
+    );
+    return null;
+  }
+  _jwks = createRemoteJWKSet(new URL(`${base}/auth/v1/.well-known/jwks.json`));
+  return _jwks;
+}
+
+async function verifyWithJwks(token: string): Promise<SupabaseAccessTokenClaims | null> {
+  const jwks = getJwks();
+  if (!jwks) return null;
+  try {
+    const { payload } = await jwtVerify(token, jwks);
+    return claimsFromPayload(payload);
+  } catch (error) {
+    console.warn("[Auth] JWKS token verification failed", String(error));
+    return null;
+  }
 }
 
 async function verifySupabaseAccessToken(
   token: string
 ): Promise<SupabaseAccessTokenClaims | null> {
-  try {
-    const { payload } = await jwtVerify(token, getSupabaseJwtSecretKey(), {
-      algorithms: ["HS256"],
-    });
+  // Prefer JWKS (new ECC keys). Fall back to legacy HS256 secret.
+  const fromJwks = await verifyWithJwks(token);
+  if (fromJwks) return fromJwks;
 
-    const sub = payload.sub;
-    if (!isNonEmptyString(sub)) {
-      console.warn("[Auth] Supabase token missing sub claim");
-      return null;
-    }
+  const fromLegacy = await verifyWithLegacySecret(token);
+  if (fromLegacy) return fromLegacy;
 
-    return {
-      sub,
-      email: typeof payload.email === "string" ? payload.email : null,
-      user_metadata: (payload.user_metadata as SupabaseAccessTokenClaims["user_metadata"]) ?? null,
-      app_metadata: (payload.app_metadata as SupabaseAccessTokenClaims["app_metadata"]) ?? null,
-    };
-  } catch (error) {
-    console.warn("[Auth] Supabase token verification failed", String(error));
-    return null;
-  }
+  console.warn(
+    "[Auth] Supabase token verification failed for both JWKS and legacy HS256 secret"
+  );
+  return null;
 }
 
 /**
