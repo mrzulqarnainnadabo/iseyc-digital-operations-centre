@@ -38,10 +38,19 @@ export function useAuth() {
   const sessionLoading = session === undefined;
   const loading = sessionLoading || (Boolean(session) && meQuery.isLoading);
 
+  // Session exists but server could not resolve the institutional user.
+  // Common causes: SUPABASE_JWT_SECRET missing/wrong on the host, or DB down.
+  const serverAuthError =
+    Boolean(session) && !meQuery.isLoading && meQuery.data == null
+      ? meQuery.error?.message ??
+        "Signed in with Supabase, but the server could not verify your session. Check SUPABASE_JWT_SECRET on the host."
+      : null;
+
   return {
     user: session ? (meQuery.data ?? null) : null,
     loading,
     error: meQuery.error ?? null,
+    serverAuthError,
     isAuthenticated: Boolean(session && meQuery.data),
     refresh: () => meQuery.refetch(),
     logout,
