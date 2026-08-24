@@ -29,24 +29,33 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-async function startServer() {
+async function createApp() {
   const app = express();
   const server = createServer(app);
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
+
   app.post("/api/scheduled/meeting-fallback", async (req, res) => {
     try {
       const cronUser = await cronAuth.authenticateCronRequest(req);
-      if (!(await isRegisteredFallbackTask(cronUser.taskUid))) return res.json({ ok: true, skipped: "orphan_or_unregistered_task" });
+      if (!(await isRegisteredFallbackTask(cronUser.taskUid))) {
+        return res.json({ ok: true, skipped: "orphan_or_unregistered_task" });
+      }
       const outcomes = await processDueSubmissions();
       return res.json({ ok: true, processed: outcomes.length, outcomes });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown scheduled fallback error";
-      return res.status(500).json({ error: message, context: { path: "/api/scheduled/meeting-fallback" }, timestamp: new Date().toISOString() });
+      return res.status(500).json({
+        error: message,
+        context: { path: "/api/scheduled/meeting-fallback" },
+        timestamp: new Date().toISOString(),
+      });
     }
   });
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -55,11 +64,25 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+  }
+
+  return { app, server };
+}
+
+async function startServer() {
+  const { app, server } = await createApp();
+
+  // On Vercel (serverless) we must NOT call .listen()
+  // Vercel sets the VERCEL environment variable
+  if (process.env.VERCEL) {
+    console.log("[ISEYC] Running in Vercel serverless mode – skipping listen()");
+    return app;
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
@@ -72,6 +95,21 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  return app;
 }
 
-startServer().catch(console.error);
+// For local development and traditional hosting
+const appPromise = startServer().catch(err => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
+
+// Export for Vercel serverless
+export default async function handler(req: any, res: any) {
+  const app = await appPromise;
+  return app(req, res);
+}
+
+// Also export the app promise for other consumers
+export { appPromise };
