@@ -27,13 +27,20 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       async headers() {
-        // Attach the current Supabase access token so the server can verify
-        // the session (see server/_core/supabaseAuth.ts). getSession() reads
-        // from local state and only hits the network when a refresh is due,
-        // so this stays cheap on every request.
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        return token ? { Authorization: `Bearer ${token}` } : {};
+        // Prefer getSession (local). If empty, force a refresh once.
+        let { data } = await supabase.auth.getSession();
+        let token = data.session?.access_token;
+
+        if (!token) {
+          const refreshed = await supabase.auth.refreshSession();
+          token = refreshed.data.session?.access_token;
+        }
+
+        if (!token) {
+          return {};
+        }
+
+        return { Authorization: `Bearer ${token}` };
       },
       fetch(input, init) {
         return globalThis.fetch(input, {
