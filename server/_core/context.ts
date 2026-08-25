@@ -13,13 +13,18 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
+  const hasBearer =
+    typeof opts.req.headers.authorization === "string" &&
+    opts.req.headers.authorization.startsWith("Bearer ");
+
   try {
     user = await authenticateSupabaseRequest(opts.req);
+    console.log(`[Auth] OK userId=${user.id} authUserId=${user.authUserId}`);
   } catch (error) {
-    // Authentication is optional for public procedures (auth.me, etc.).
-    // Note: the scheduled meeting-fallback cron callback is NOT authenticated
-    // here — it's a plain Express route (not tRPC) verified separately by
-    // server/_core/sdk.ts's cronAuth. See server/_core/index.ts.
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `[Auth] FAIL hasBearer=${hasBearer} reason=${message}`
+    );
     user = null;
   }
 
