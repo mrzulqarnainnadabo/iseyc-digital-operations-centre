@@ -12,17 +12,12 @@ export function useAuth() {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      // A sign-in/sign-out/token-refresh means the Bearer token main.tsx
-      // attaches to tRPC requests has changed — re-fetch the enriched user
-      // record (docRole, isAuthorizedOfficer, etc.) from our own backend.
       utils.auth.me.invalidate();
     });
 
     return () => subscription.subscription.unsubscribe();
   }, [utils]);
 
-  // Once we know whether there's a Supabase session, ask our backend for the
-  // matching institutional user record (auto-provisioned on first sign-in).
   const meQuery = trpc.auth.me.useQuery(undefined, {
     enabled: session !== undefined,
     retry: false,
@@ -38,12 +33,10 @@ export function useAuth() {
   const sessionLoading = session === undefined;
   const loading = sessionLoading || (Boolean(session) && meQuery.isLoading);
 
-  // Session exists but server could not resolve the institutional user.
-  // Common causes: SUPABASE_JWT_SECRET missing/wrong on the host, or DB down.
   const serverAuthError =
     Boolean(session) && !meQuery.isLoading && meQuery.data == null
       ? meQuery.error?.message ??
-        "Signed in with Supabase, but the server could not verify your session. Check SUPABASE_JWT_SECRET on the host."
+        "Signed in with Supabase, but the server could not verify your session. Check SUPABASE_URL, SUPABASE_ANON_KEY, and DATABASE_URL on the host."
       : null;
 
   return {
