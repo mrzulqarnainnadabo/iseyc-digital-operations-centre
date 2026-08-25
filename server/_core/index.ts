@@ -15,6 +15,18 @@ async function createApp() {
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Debug: log every request so Render Application logs always show activity
+  app.use((req, _res, next) => {
+    const hasAuth =
+      typeof req.headers.authorization === "string" &&
+      req.headers.authorization.startsWith("Bearer ");
+    console.log(
+      `[Req] ${req.method} ${req.path} authHeader=${hasAuth ? "yes" : "no"}`
+    );
+    next();
+  });
+
   registerStorageProxy(app);
 
   app.post("/api/scheduled/meeting-fallback", async (req, res) => {
@@ -55,10 +67,15 @@ async function createApp() {
 async function start() {
   const { app, server } = await createApp();
 
-  // Railway, Render, Fly, and local all set PORT
   const port = parseInt(process.env.PORT || "3000", 10);
 
-  // On Vercel we skip listen (serverless)
+  // Startup diagnostics (no secrets printed)
+  console.log("[Env] NODE_ENV=", process.env.NODE_ENV ?? "(unset)");
+  console.log("[Env] SUPABASE_URL set=", Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL));
+  console.log("[Env] SUPABASE_ANON_KEY set=", Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY));
+  console.log("[Env] DATABASE_URL set=", Boolean(process.env.DATABASE_URL));
+  console.log("[Env] SUPABASE_JWT_SECRET set=", Boolean(process.env.SUPABASE_JWT_SECRET));
+
   if (process.env.VERCEL) {
     console.log("[ISEYC] Vercel serverless mode – exporting handler only");
     return app;
@@ -71,13 +88,11 @@ async function start() {
   return app;
 }
 
-// Vercel serverless export
 export default async function handler(req: any, res: any) {
   const app = await start();
   return app(req, res);
 }
 
-// Traditional hosts (Railway, Render, local)
 if (!process.env.VERCEL) {
   start().catch((err) => {
     console.error("[ISEYC] Failed to start server:", err);
