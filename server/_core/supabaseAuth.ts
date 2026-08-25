@@ -1,5 +1,4 @@
 import { ForbiddenError } from "@shared/_core/errors";
-import { createClient } from "@supabase/supabase-js";
 import type { Request } from "express";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
@@ -21,64 +20,75 @@ function extractBearerToken(req: Request): string | null {
 }
 
 /**
- * Official Supabase verification: pass the access token to auth.getUser().
- * This works for both legacy HS256 and new ECC (ES256) signing keys and does
- * not require us to manage JWKS or algorithm allow-lists.
+ * Verify the browser access token by calling Supabase Auth directly:
+ *   GET {SUPABASE_URL}/auth/v1/user
+ * Headers: Authorization: Bearer <access_token>, apikey: <anon key>
+ *
+ * Works with both legacy JWT anon keys and new sb_publishable_ keys.
  */
-async function verifyWithSupabaseApi(
+async function verifyWithSupabaseUserApi(
   token: string
 ): Promise<SupabaseAccessTokenClaims | null> {
-  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) {
+  const base = ENV.supabaseUrl.replace(/\/$/, "");
+  const apiKey = ENV.supabaseAnonKey;
+
+  if (!base || !apiKey) {
     console.error(
-      "[Auth] SUPABASE_URL and SUPABASE_ANON_KEY (or VITE_* equivalents) must be set on the server."
+      "[Auth] Missing SUPABASE_URL or SUPABASE_ANON_KEY on server.",
+      `urlSet=${Boolean(base)} keySet=${Boolean(apiKey)}`
     );
     return null;
   }
 
   try {
-    const supabase = createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
+    const res = await fetch(`${base}/auth/v1/user`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: apiKey,
+        "Content-Type": "application/json",
       },
     });
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) {
-      console.warn("[Auth] supabase.auth.getUser failed:", error?.message ?? "no user");
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn(
+        `[Auth] /auth/v1/user failed status=${res.status} body=${body.slice(0, 300)}`
+      );
       return null;
     }
 
-    const u = data.user;
+    const u = (await res.json()) as {
+      id?: string;
+      email?: string;
+      user_metadata?: { full_name?: string; name?: string } | null;
+      app_metadata?: { provider?: string } | null;
+    };
+
+    if (!u?.id) {
+      console.warn("[Auth] /auth/v1/user returned no user id");
+      return null;
+    }
+
     return {
       sub: u.id,
       email: u.email ?? null,
-      user_metadata: (u.user_metadata as SupabaseAccessTokenClaims["user_metadata"]) ?? null,
-      app_metadata: (u.app_metadata as SupabaseAccessTokenClaims["app_metadata"]) ?? null,
+      user_metadata: u.user_metadata ?? null,
+      app_metadata: u.app_metadata ?? null,
     };
   } catch (error) {
-    console.warn("[Auth] supabase.auth.getUser threw:", String(error));
+    console.warn("[Auth] /auth/v1/user request error:", String(error));
     return null;
   }
 }
 
-/**
- * Authenticate a request against a Supabase Auth access token (sent as
- * `Authorization: Bearer <access_token>` by the browser client).
- *
- * On first sign-in a row is auto-provisioned in our `users` table
- * (default docRole="member", isAuthorizedOfficer=false). An administrator
- * must then grant officer access. ENV.ownerAuthUserId is bootstrapped to
- * National President on first sign-in.
- */
 export async function authenticateSupabaseRequest(req: Request): Promise<User> {
   const token = extractBearerToken(req);
   if (!token) {
     throw ForbiddenError("Missing Supabase access token");
   }
 
-  const claims = await verifyWithSupabaseApi(token);
+  const claims = await verifyWithSupabaseUserApi(token);
   if (!claims) {
     throw ForbiddenError("Invalid or expired session");
   }
@@ -90,24 +100,33 @@ export async function authenticateSupabaseRequest(req: Request): Promise<User> {
     const displayName =
       claims.user_metadata?.full_name || claims.user_metadata?.name || null;
 
-    await db.upsertUser({
-      authUserId: claims.sub,
-      name: displayName,
-      email: claims.email ?? null,
-      loginMethod: claims.app_metadata?.provider ?? "email",
-      lastSignedIn: signedInAt,
-    });
-    user = await db.getUserByAuthUserId(claims.sub);
+    try {
+      await db.upsertUser({
+        authUserId: claims.sub,
+        name: displayName,
+        email: claims.email ?? null,
+        loginMethod: claims.app_metadata?.provider ?? "email",
+        lastSignedIn: signedInAt,
+      });
+      user = await db.getUserByAuthUserId(claims.sub);
+    } catch (error) {
+      console.error("[Auth] Failed to provision user in database:", String(error));
+      throw ForbiddenError("Could not create institutional user record");
+    }
   }
 
   if (!user) {
     throw ForbiddenError("User not found");
   }
 
-  await db.upsertUser({
-    authUserId: user.authUserId,
-    lastSignedIn: signedInAt,
-  });
+  try {
+    await db.upsertUser({
+      authUserId: user.authUserId,
+      lastSignedIn: signedInAt,
+    });
+  } catch (error) {
+    console.warn("[Auth] Failed to update lastSignedIn:", String(error));
+  }
 
   return user;
 }
