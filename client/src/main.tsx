@@ -1,11 +1,15 @@
 import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabaseClient";
+import { initAuthTokenListener, resolveAccessToken } from "@/lib/authToken";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
+
+// Keep an in-memory access token so tRPC headers never race with localStorage.
+initAuthTokenListener();
 
 const queryClient = new QueryClient();
 
@@ -27,19 +31,12 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       async headers() {
-        // Prefer getSession (local). If empty, force a refresh once.
-        let { data } = await supabase.auth.getSession();
-        let token = data.session?.access_token;
-
+        const token = await resolveAccessToken();
         if (!token) {
-          const refreshed = await supabase.auth.refreshSession();
-          token = refreshed.data.session?.access_token;
-        }
-
-        if (!token) {
+          // Visible in browser DevTools Network + Console when token is missing
+          console.warn("[tRPC] No Supabase access token available for this request");
           return {};
         }
-
         return { Authorization: `Bearer ${token}` };
       },
       fetch(input, init) {

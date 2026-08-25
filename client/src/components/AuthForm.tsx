@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
+import { setAccessToken } from "@/lib/authToken";
 import { FormEvent, useState } from "react";
 
 type Mode = "sign_in" | "sign_up" | "reset_password";
@@ -29,11 +30,15 @@ export function AuthForm() {
 
     try {
       if (mode === "sign_in") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (signInError) throw signInError;
+        // Seed the in-memory token immediately so the first auth.me request
+        // after sign-in carries Authorization: Bearer (avoids localStorage race).
+        setAccessToken(signInData.session?.access_token ?? null);
         // Session is set; useAuth + onAuthStateChange will re-render the app.
-        // If the server cannot verify the JWT (missing SUPABASE_JWT_SECRET),
-        // the user will stay on this screen — that is a server env issue.
       } else if (mode === "sign_up") {
         const { error: signUpError } = await supabase.auth.signUp({
           email,

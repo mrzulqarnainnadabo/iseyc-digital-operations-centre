@@ -13,9 +13,10 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
+  const authHeader = opts.req.headers.authorization;
   const hasBearer =
-    typeof opts.req.headers.authorization === "string" &&
-    opts.req.headers.authorization.startsWith("Bearer ");
+    typeof authHeader === "string" && authHeader.startsWith("Bearer ");
+  const tokenLen = hasBearer ? authHeader.slice(7).length : 0;
 
   try {
     user = await authenticateSupabaseRequest(opts.req);
@@ -23,7 +24,7 @@ export async function createContext(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(
-      `[Auth] FAIL hasBearer=${hasBearer} reason=${message}`
+      `[Auth] FAIL hasBearer=${hasBearer} tokenLen=${tokenLen} reason=${message}`
     );
     user = null;
   }
