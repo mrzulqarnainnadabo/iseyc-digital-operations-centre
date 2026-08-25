@@ -18,8 +18,9 @@ export function useAuth() {
     return () => subscription.subscription.unsubscribe();
   }, [utils]);
 
+  // Only ask the server who we are when Supabase already has a session.
   const meQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: session !== undefined,
+    enabled: Boolean(session),
     retry: false,
     refetchOnWindowFocus: false,
   });
