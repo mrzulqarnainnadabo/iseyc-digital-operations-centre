@@ -76,8 +76,30 @@ async function start() {
   console.log("[Env] DATABASE_URL set=", Boolean(process.env.DATABASE_URL));
   console.log("[Env] SUPABASE_JWT_SECRET set=", Boolean(process.env.SUPABASE_JWT_SECRET));
 
+  // Safe shape check for DATABASE_URL (never log password)
+  const dbUrl = (process.env.DATABASE_URL ?? "").trim();
+  if (!dbUrl) {
+    console.error("[Env] DATABASE_URL is empty");
+  } else if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
+    console.error(
+      "[Env] DATABASE_URL is set but does not start with postgresql:// \u2014 " +
+        "paste the real Supabase URI (not placeholder text)."
+    );
+  } else {
+    try {
+      const u = new URL(dbUrl);
+      console.log(
+        `[Env] DATABASE_URL ok host=${u.hostname} port=${u.port || "(default)"} db=${u.pathname}`
+      );
+    } catch {
+      console.error(
+        "[Env] DATABASE_URL is not a valid URL \u2014 check for spaces, quotes, or missing password"
+      );
+    }
+  }
+
   if (process.env.VERCEL) {
-    console.log("[ISEYC] Vercel serverless mode – exporting handler only");
+    console.log("[ISEYC] Vercel serverless mode \u2013 exporting handler only");
     return app;
   }
 
