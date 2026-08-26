@@ -19,14 +19,46 @@ function normalizeDatabaseUrl(raw: string): string {
   return url.includes("?") ? `${url}&sslmode=require` : `${url}?sslmode=require`;
 }
 
+function formatDbError(error: unknown): string {
+  if (!error) return "unknown";
+  if (error instanceof Error) {
+    const anyErr = error as Error & {
+      code?: string;
+      detail?: string;
+      hint?: string;
+      severity?: string;
+      cause?: unknown;
+    };
+    const parts = [
+      anyErr.message,
+      anyErr.code ? `code=${anyErr.code}` : null,
+      anyErr.detail ? `detail=${anyErr.detail}` : null,
+      anyErr.hint ? `hint=${anyErr.hint}` : null,
+      anyErr.severity ? `severity=${anyErr.severity}` : null,
+    ].filter(Boolean);
+
+    // postgres.js / drizzle often nest the real driver error
+    if (anyErr.cause) {
+      parts.push(`cause=${formatDbError(anyErr.cause)}`);
+    }
+    return parts.join(" | ");
+  }
+  return String(error);
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       const connectionString = normalizeDatabaseUrl(process.env.DATABASE_URL);
-      const client = postgres(connectionString, { prepare: false });
+      const client = postgres(connectionString, {
+        prepare: false,
+        max: 5,
+        idle_timeout: 20,
+        connect_timeout: 10,
+      });
       _db = drizzle(client);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.warn("[Database] Failed to connect:", formatDbError(error));
       _db = null;
     }
   }
@@ -112,7 +144,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       });
     }
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    console.error("[Database] Failed to upsert user:", formatDbError(error));
     throw error;
   }
 }
@@ -124,9 +156,20 @@ export async function getUserByAuthUserId(authUserId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.authUserId, authUserId)).limit(1);
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.authUserId, authUserId))
+      .limit(1);
 
-  return result.length > 0 ? result[0] : undefined;
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    // Re-throw with a richer message so Auth FAIL logs show the real Postgres cause
+    const detail = formatDbError(error);
+    console.error("[Database] getUserByAuthUserId failed:", detail);
+    throw new Error(`users lookup failed: ${detail}`);
+  }
 }
 
 // TODO: add feature queries here as your schema grows.

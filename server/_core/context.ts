@@ -23,8 +23,18 @@ export async function createContext(
     console.log(`[Auth] OK userId=${user.id} authUserId=${user.authUserId}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    // Log full error object fields when available (postgres.js often puts code/detail on the error)
+    const anyErr = error as Error & { code?: string; detail?: string; cause?: unknown };
+    const extra = [
+      anyErr.code ? `code=${anyErr.code}` : null,
+      anyErr.detail ? `detail=${anyErr.detail}` : null,
+      anyErr.cause ? `cause=${String(anyErr.cause)}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     console.warn(
-      `[Auth] FAIL hasBearer=${hasBearer} tokenLen=${tokenLen} reason=${message}`
+      `[Auth] FAIL hasBearer=${hasBearer} tokenLen=${tokenLen} reason=${message}${extra ? " " + extra : ""}`
     );
     user = null;
   }
