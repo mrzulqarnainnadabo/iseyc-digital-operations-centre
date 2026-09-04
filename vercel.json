@@ -2,16 +2,11 @@
   "version": 2,
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
   "installCommand": "npm install --legacy-peer-deps",
-  "builds": [
+  "outputDirectory": "dist/public",
+  "rewrites": [
     {
-      "src": "dist/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dist/index.js"
+      "source": "/api/:path*",
+      "destination": "/api/index"
     }
   ]
 }
