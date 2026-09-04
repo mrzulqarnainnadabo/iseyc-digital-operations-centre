@@ -9,14 +9,14 @@ import { serveStatic, setupVite } from "./vite";
 import { cronAuth } from "./sdk";
 import { isRegisteredFallbackTask, processDueSubmissions } from "../meeting/service";
 
-async function createApp() {
+export async function createApp(options: { serveClient?: boolean } = {}) {
+  const { serveClient = true } = options;
   const app = express();
   const server = createServer(app);
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Debug: log every request so Render Application logs always show activity
   app.use((req, _res, next) => {
     const hasAuth =
       typeof req.headers.authorization === "string" &&
@@ -55,10 +55,12 @@ async function createApp() {
     })
   );
 
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+  if (serveClient) {
+    if (process.env.NODE_ENV === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
   }
 
   return { app, server };
@@ -69,37 +71,28 @@ async function start() {
 
   const port = parseInt(process.env.PORT || "3000", 10);
 
-  // Startup diagnostics (no secrets printed)
   console.log("[Env] NODE_ENV=", process.env.NODE_ENV ?? "(unset)");
   console.log("[Env] SUPABASE_URL set=", Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL));
   console.log("[Env] SUPABASE_ANON_KEY set=", Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY));
   console.log("[Env] DATABASE_URL set=", Boolean(process.env.DATABASE_URL));
   console.log("[Env] SUPABASE_JWT_SECRET set=", Boolean(process.env.SUPABASE_JWT_SECRET));
 
-  // Safe shape check for DATABASE_URL (never log password)
   const dbUrl = (process.env.DATABASE_URL ?? "").trim();
   if (!dbUrl) {
     console.error("[Env] DATABASE_URL is empty");
   } else if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
-    console.error(
-      "[Env] DATABASE_URL is set but does not start with postgresql:// \u2014 " +
-        "paste the real Supabase URI (not placeholder text)."
-    );
+    console.error("[Env] DATABASE_URL is set but does not start with postgresql://");
   } else {
     try {
       const u = new URL(dbUrl);
-      console.log(
-        `[Env] DATABASE_URL ok host=${u.hostname} port=${u.port || "(default)"} db=${u.pathname}`
-      );
+      console.log(`[Env] DATABASE_URL ok host=${u.hostname} port=${u.port || "(default)"} db=${u.pathname}`);
     } catch {
-      console.error(
-        "[Env] DATABASE_URL is not a valid URL \u2014 check for spaces, quotes, or missing password"
-      );
+      console.error("[Env] DATABASE_URL is not a valid URL");
     }
   }
 
   if (process.env.VERCEL) {
-    console.log("[ISEYC] Vercel serverless mode \u2013 exporting handler only");
+    console.log("[ISEYC] Vercel serverless mode – exporting handler only");
     return app;
   }
 
