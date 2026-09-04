@@ -1,4 +1,9 @@
-import { createApp } from "../server/_core/index.ts";
+/**
+ * Vercel serverless entry.
+ * Imports the pre-built Express app from dist/ (created by `npm run build`).
+ * Do NOT import TypeScript from server/ here — Vercel cannot execute .ts at runtime.
+ */
+import { createApp } from "../dist/index.js";
 
 let appPromise;
 
@@ -15,9 +20,11 @@ export default async function handler(req, res) {
     return app(req, res);
   } catch (error) {
     console.error("[ISEYC] Failed to initialize API handler", error);
-    return res.status(500).json({
-      error: "API initialization failed",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "API initialization failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 }
