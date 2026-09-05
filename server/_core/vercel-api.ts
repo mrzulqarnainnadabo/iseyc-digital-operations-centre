@@ -1,14 +1,15 @@
 /**
- * Vercel-only entry: API routes only (SPA is served as static from dist/public).
+ * Vercel-only entry: API routes only (SPA is static from dist/public).
+ * Imports createApiApp — never index.ts / vite — so esbuild cannot inline lightningcss.
  * ISEYC Digital Operations Centre — not Autoverse.
  */
-import { createApp } from "./index";
+import { createApiApp } from "./app";
 
 let appPromise: Promise<import("express").Express> | null = null;
 
 async function getApp() {
   if (!appPromise) {
-    appPromise = createApp({ serveClient: false }).then(({ app }) => app);
+    appPromise = createApiApp().then(({ app }) => app);
   }
   return appPromise;
 }
