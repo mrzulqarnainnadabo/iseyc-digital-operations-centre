@@ -12,6 +12,29 @@ function appOrigin() {
   return window.location.origin;
 }
 
+function formatAuthError(err: unknown): string {
+  if (!err) return "Something went wrong. Please try again.";
+
+  if (typeof err === "string") return err;
+
+  if (typeof err === "object") {
+    const e = err as {
+      message?: string;
+      code?: string;
+      status?: number;
+      name?: string;
+    };
+    const parts = [e.message, e.code ? `code=${e.code}` : null, e.status ? `status=${e.status}` : null].filter(
+      Boolean
+    ) as string[];
+    if (parts.length) return parts.join(" · ");
+    if (e.name) return e.name;
+  }
+
+  if (err instanceof Error) return err.message || err.name;
+  return String(err);
+}
+
 export function AuthForm() {
   const [mode, setMode] = useState<Mode>("sign_in");
   const [email, setEmail] = useState("");
@@ -27,39 +50,46 @@ export function AuthForm() {
     setPending(true);
 
     const redirectTo = appOrigin();
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
       if (mode === "sign_in") {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password,
         });
         if (signInError) throw signInError;
-        // Seed the in-memory token immediately so the first auth.me request
-        // after sign-in carries Authorization: Bearer (avoids localStorage race).
         setAccessToken(signInData.session?.access_token ?? null);
-        // Session is set; useAuth + onAuthStateChange will re-render the app.
       } else if (mode === "sign_up") {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: cleanEmail,
           password,
           options: { emailRedirectTo: redirectTo },
         });
         if (signUpError) throw signUpError;
-        setNotice(
-          "Account created. Check your email to confirm, then sign in — an ISEYC administrator will confirm your institutional role afterward."
-        );
-        setMode("sign_in");
+        // If email confirmation is off, session may already exist.
+        if (signUpData.session?.access_token) {
+          setAccessToken(signUpData.session.access_token);
+          setNotice("Account created and signed in.");
+        } else {
+          setNotice(
+            "Account created. If email confirmation is on, check your inbox then sign in."
+          );
+          setMode("sign_in");
+        }
       } else {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo,
         });
         if (resetError) throw resetError;
-        setNotice("If that email is registered, a password reset link has been sent. Open it on this same device/browser.");
+        setNotice(
+          "If that email is registered, a password reset link has been sent. Open it on this same device/browser."
+        );
         setMode("sign_in");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      console.error("[AuthForm]", err);
+      setError(formatAuthError(err));
     } finally {
       setPending(false);
     }
@@ -86,7 +116,7 @@ export function AuthForm() {
             id="auth-password"
             type="password"
             required
-            minLength={8}
+            minLength={6}
             autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
             value={password}
             onChange={e => setPassword(e.target.value)}
@@ -95,7 +125,7 @@ export function AuthForm() {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-600 break-words">{error}</p> : null}
       {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
 
       <Button type="submit" size="lg" disabled={pending} className="w-full bg-slate-950 text-white hover:bg-slate-800">
