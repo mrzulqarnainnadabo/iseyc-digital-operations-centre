@@ -1,4 +1,8 @@
 /**
- * Thin Vercel entry. Real handler is built into api/_handler.mjs by `npm run build`.
+ * Vercel entry. Prefer built handler; fall back to dynamic import.
  */
-export { default } from "./_handler.mjs";
+import built from "./_handler.mjs";
+
+export default async function handler(req, res) {
+  return built(req, res);
+}
