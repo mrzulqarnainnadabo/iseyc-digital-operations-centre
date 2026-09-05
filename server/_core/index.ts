@@ -5,7 +5,6 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
 import { cronAuth } from "./sdk";
 import { isRegisteredFallbackTask, processDueSubmissions } from "../meeting/service";
 
@@ -55,10 +54,14 @@ export async function createApp(options: { serveClient?: boolean } = {}) {
     })
   );
 
+  // Lazy-load vite only when serving the client.
+  // Vercel API path uses serveClient: false → never imports vite/rollup.
   if (serveClient) {
     if (process.env.NODE_ENV === "development") {
+      const { setupVite } = await import("./vite");
       await setupVite(app, server);
     } else {
+      const { serveStatic } = await import("./vite");
       serveStatic(app);
     }
   }
