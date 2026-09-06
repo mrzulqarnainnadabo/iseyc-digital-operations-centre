@@ -14,29 +14,21 @@ function appOrigin() {
 
 function formatAuthError(err: unknown): string {
   if (!err) return "Something went wrong. Please try again.";
-
   if (typeof err === "string") return err;
-
   if (typeof err === "object") {
-    const e = err as {
-      message?: string;
-      code?: string;
-      status?: number;
-      name?: string;
-    };
+    const e = err as { message?: string; code?: string; status?: number; name?: string };
     const parts = [e.message, e.code ? `code=${e.code}` : null, e.status ? `status=${e.status}` : null].filter(
       Boolean
     ) as string[];
     if (parts.length) return parts.join(" · ");
     if (e.name) return e.name;
   }
-
   if (err instanceof Error) return err.message || err.name;
   return String(err);
 }
 
 export function AuthForm() {
-  const [mode, setMode] = useState<Mode>("sign_in");
+  const [mode, setMode] = useState<Mode>("sign_up");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -67,14 +59,11 @@ export function AuthForm() {
           options: { emailRedirectTo: redirectTo },
         });
         if (signUpError) throw signUpError;
-        // If email confirmation is off, session may already exist.
         if (signUpData.session?.access_token) {
           setAccessToken(signUpData.session.access_token);
-          setNotice("Account created and signed in.");
+          setNotice("Welcome to ISEYC — you are signed in.");
         } else {
-          setNotice(
-            "Account created. If email confirmation is on, check your inbox then sign in."
-          );
+          setNotice("Account created. Check your email if confirmation is required, then sign in.");
           setMode("sign_in");
         }
       } else {
@@ -82,9 +71,7 @@ export function AuthForm() {
           redirectTo,
         });
         if (resetError) throw resetError;
-        setNotice(
-          "If that email is registered, a password reset link has been sent. Open it on this same device/browser."
-        );
+        setNotice("If that email is registered, a reset link was sent. Open it on this device.");
         setMode("sign_in");
       }
     } catch (err) {
@@ -96,7 +83,38 @@ export function AuthForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-7 space-y-4 text-left">
+    <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-left">
+      {mode !== "reset_password" ? (
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("sign_up");
+              setError(null);
+              setNotice(null);
+            }}
+            className={`rounded-lg py-2 text-sm font-medium transition ${
+              mode === "sign_up" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
+            }`}
+          >
+            Join ISEYC
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("sign_in");
+              setError(null);
+              setNotice(null);
+            }}
+            className={`rounded-lg py-2 text-sm font-medium transition ${
+              mode === "sign_in" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
+            }`}
+          >
+            Sign in
+          </button>
+        </div>
+      ) : null}
+
       <div className="space-y-1.5">
         <Label htmlFor="auth-email">Email</Label>
         <Input
@@ -106,7 +124,7 @@ export function AuthForm() {
           autoComplete="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="you@iseyc.example"
+          placeholder="you@email.com"
         />
       </div>
       {mode !== "reset_password" ? (
@@ -120,45 +138,34 @@ export function AuthForm() {
             autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder="At least 6 characters"
           />
+          {mode === "sign_up" ? (
+            <p className="text-[11px] text-slate-400">Minimum 6 characters. You can change this later.</p>
+          ) : null}
         </div>
       ) : null}
 
       {error ? <p className="text-sm text-red-600 break-words">{error}</p> : null}
       {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
 
-      <Button type="submit" size="lg" disabled={pending} className="w-full bg-slate-950 text-white hover:bg-slate-800">
-        {pending ? "Please wait…" : mode === "sign_in" ? "Sign in" : mode === "sign_up" ? "Create account" : "Send reset link"}
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
+      >
+        {pending
+          ? "Please wait…"
+          : mode === "sign_in"
+            ? "Sign in"
+            : mode === "sign_up"
+              ? "Create free account"
+              : "Send reset link"}
       </Button>
 
       <div className="flex items-center justify-between text-xs text-slate-500">
-        {mode === "sign_in" ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("sign_up");
-                setError(null);
-                setNotice(null);
-              }}
-              className="underline hover:text-slate-800"
-            >
-              Create an account
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("reset_password");
-                setError(null);
-                setNotice(null);
-              }}
-              className="underline hover:text-slate-800"
-            >
-              Forgot password?
-            </button>
-          </>
-        ) : (
+        {mode === "reset_password" ? (
           <button
             type="button"
             onClick={() => {
@@ -169,6 +176,18 @@ export function AuthForm() {
             className="underline hover:text-slate-800"
           >
             Back to sign in
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setMode("reset_password");
+              setError(null);
+              setNotice(null);
+            }}
+            className="underline hover:text-slate-800"
+          >
+            Forgot password?
           </button>
         )}
       </div>
