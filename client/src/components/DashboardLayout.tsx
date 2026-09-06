@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { AuthForm } from "./AuthForm";
+import { ISEYC_LOGO_SRC, ISEYC_TAGLINE } from "@/lib/branding";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
@@ -10,7 +11,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
-const ISEYC_LOGO = "/iseyc-logo.svg";
+const ISEYC_LOGO = ISEYC_LOGO_SRC;
 type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean };
 const menuItems: MenuItem[] = [
   { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
@@ -40,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <AccessCard
         title="ISEYC Digital Operations Centre"
-        description="Sign in with your authorised ISEYC account to begin a secure institutional and developmental journey."
+        description="Sign in or create your ISEYC account to begin a secure institutional and developmental journey."
       >
         {serverAuthError ? (
           <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-900">
@@ -60,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <AccessCard
         title="ISEYC Digital Operations Centre"
-        description="Your account is signed in. An ISEYC administrator must confirm the appropriate institutional role before operational modules become available."
+        description="Your account is signed in. An ISEYC administrator must confirm your institutional role before operational modules open."
       >
         <Button onClick={logout} size="lg" className="mt-7 w-full bg-slate-950 text-white hover:bg-slate-800">
           Sign out
@@ -79,12 +80,12 @@ function AccessCard({ title, description, children }: { title: string; descripti
   return (
     <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,#ecfdf5,transparent_38%),#f8fafc] p-6">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_30px_80px_-40px_rgba(15,23,42,.3)]">
-        <img src={ISEYC_LOGO} alt="Official ISEYC logo" className="mx-auto h-24 w-24 object-contain" />
-        <p className="mt-6 text-xs font-bold uppercase tracking-[.16em] text-emerald-700">Institutional access</p>
+        <img src={ISEYC_LOGO} alt="Official ISEYC logo" className="mx-auto h-32 w-auto max-w-[240px] object-contain" />
+        <p className="mt-5 text-xs font-bold uppercase tracking-[.16em] text-emerald-700">Institutional access</p>
         <h1 className="mt-2 font-serif text-3xl text-slate-950">{title}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
         {children}
-        <p className="mt-5 text-xs text-slate-400">Empowering Youth, Shaping Communities — Every Street. Every Voice. Accountable Leadership.</p>
+        <p className="mt-5 text-xs text-slate-400">{ISEYC_TAGLINE}</p>
       </div>
     </div>
   );
@@ -133,7 +134,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
               </button>
               {!isCollapsed ? (
                 <div className="flex min-w-0 items-center gap-2">
-                  <img src={ISEYC_LOGO} alt="ISEYC" className="h-10 w-10 rounded-xl object-contain bg-white p-0.5" />
+                  <img src={ISEYC_LOGO} alt="ISEYC" className="h-11 w-11 rounded-xl object-contain bg-white p-0.5" />
                   <div className="min-w-0">
                     <p className="font-serif text-lg text-white">ISEYC</p>
                     <p className="truncate text-[10px] font-bold uppercase tracking-[.15em] text-emerald-300">Digital Operations Centre</p>
