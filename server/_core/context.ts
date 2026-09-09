@@ -1,6 +1,7 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { authenticateSupabaseRequest } from "./supabaseAuth";
+import { REQUEST_ID_HEADER } from "./observability";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -12,30 +13,14 @@ export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
   let user: User | null = null;
-
-  const authHeader = opts.req.headers.authorization;
-  const hasBearer =
-    typeof authHeader === "string" && authHeader.startsWith("Bearer ");
-  const tokenLen = hasBearer ? authHeader.slice(7).length : 0;
+  const requestId = opts.req.header(REQUEST_ID_HEADER) ?? "-";
 
   try {
     user = await authenticateSupabaseRequest(opts.req);
-    console.log(`[Auth] OK userId=${user.id} authUserId=${user.authUserId}`);
+    console.log(`[Auth] id=${requestId} result=ok userId=${user.id}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    // Log full error object fields when available (postgres.js often puts code/detail on the error)
-    const anyErr = error as Error & { code?: string; detail?: string; cause?: unknown };
-    const extra = [
-      anyErr.code ? `code=${anyErr.code}` : null,
-      anyErr.detail ? `detail=${anyErr.detail}` : null,
-      anyErr.cause ? `cause=${String(anyErr.cause)}` : null,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    console.warn(
-      `[Auth] FAIL hasBearer=${hasBearer} tokenLen=${tokenLen} reason=${message}${extra ? " " + extra : ""}`
-    );
+    const message = error instanceof Error ? error.message : "Unknown authentication error";
+    console.warn(`[Auth] id=${requestId} result=fail reason=${message}`);
     user = null;
   }
 
