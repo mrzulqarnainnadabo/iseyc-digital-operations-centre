@@ -11,22 +11,48 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { cronAuth } from "./sdk";
 import { isRegisteredFallbackTask, processDueSubmissions } from "../meeting/service";
+import { createRequestId, logRequest, REQUEST_ID_HEADER } from "./observability";
 
 export async function createApiApp() {
   const app = express();
   const server = createServer(app);
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.disable("x-powered-by");
 
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    const requestId = createRequestId();
+    const startedAt = process.hrtime.bigint();
     const hasAuth =
       typeof req.headers.authorization === "string" &&
       req.headers.authorization.startsWith("Bearer ");
-    console.log(
-      `[Req] ${req.method} ${req.path} authHeader=${hasAuth ? "yes" : "no"}`
-    );
+
+    res.setHeader(REQUEST_ID_HEADER, requestId);
+    logRequest({
+      requestId,
+      method: req.method,
+      path: req.path,
+      authenticated: hasAuth,
+    });
+
+    res.on("finish", () => {
+      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      console.log(
+        `[Req] id=${requestId} status=${res.statusCode} durationMs=${durationMs.toFixed(1)}`
+      );
+    });
+
     next();
+  });
+
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      service: "iseyc-digital-operations-centre",
+      timestamp: new Date().toISOString(),
+    });
   });
 
   registerStorageProxy(app);
@@ -40,10 +66,9 @@ export async function createApiApp() {
       const outcomes = await processDueSubmissions();
       return res.json({ ok: true, processed: outcomes.length, outcomes });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown scheduled fallback error";
+      console.error("[MeetingFallback] request failed", error);
       return res.status(500).json({
-        error: message,
+        error: "Scheduled meeting fallback failed",
         context: { path: "/api/scheduled/meeting-fallback" },
         timestamp: new Date().toISOString(),
       });
