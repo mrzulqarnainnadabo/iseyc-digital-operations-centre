@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AuthForm } from "./AuthForm";
 import { ISEYC_LOGO_SRC, ISEYC_TAGLINE } from "@/lib/branding";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
+import { Activity, Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -14,6 +14,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, Si
 const ISEYC_LOGO = ISEYC_LOGO_SRC;
 type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean };
 const menuItems: MenuItem[] = [
+  { icon: Activity, label: "Operations overview", path: "/operations", group: "Executive" },
   { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
   { icon: UserRound, label: "My development", path: "/development", group: "Development" },
   { icon: ClipboardCheck, label: "Continuity & contribution", path: "/development-continuity", group: "Development" },
