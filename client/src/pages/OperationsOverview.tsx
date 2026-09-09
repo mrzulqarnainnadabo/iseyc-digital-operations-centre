@@ -1,15 +1,16 @@
 import { PageHeading } from "@/components/PageHeading";
-import { StatusPill } from "@/components/StatusPill";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, FileText, Landmark, ListChecks, Radio } from "lucide-react";
 import { useLocation } from "wouter";
 
+const READ_MODEL_STALE_TIME = 30_000;
+
 export default function OperationsOverview() {
   const [, setLocation] = useLocation();
-  const meetings = trpc.meeting.queue.useQuery({ isTestMode: false });
-  const actions = trpc.meeting.actions.useQuery();
-  const chamber = trpc.chamber.sessions.useQuery({ isTestMode: false });
-  const content = trpc.doc.contentQueue.useQuery({ isTestMode: false });
+  const meetings = trpc.meeting.queue.useQuery({ isTestMode: false }, { staleTime: READ_MODEL_STALE_TIME });
+  const actions = trpc.meeting.actions.useQuery(undefined, { staleTime: READ_MODEL_STALE_TIME });
+  const chamber = trpc.chamber.sessions.useQuery({ isTestMode: false }, { staleTime: READ_MODEL_STALE_TIME });
+  const content = trpc.doc.contentQueue.useQuery({ isTestMode: false }, { staleTime: READ_MODEL_STALE_TIME });
 
   const loading = meetings.isLoading || actions.isLoading || chamber.isLoading || content.isLoading;
   const error = meetings.error || actions.error || chamber.error || content.error;
@@ -22,11 +23,11 @@ export default function OperationsOverview() {
     ...meetingRows
       .filter(row => ["needs_human_review", "blocked"].includes(row.status))
       .slice(0, 5)
-      .map(row => ({ key: `meeting-${row.id}`, type: "Meeting", title: row.meetingTitle, reason: row.statusReason || "Meeting record requires human review.", status: row.status, action: () => setLocation(`/review/${row.id}`) })),
+      .map(row => ({ key: `meeting-${row.id}`, type: "Meeting", title: row.meetingTitle, reason: row.statusReason || "Meeting record requires human review.", action: () => setLocation(`/review/${row.id}`) })),
     ...contentRows
       .filter(row => ["revision_requested", "withheld_for_governance_review"].includes(row.status))
       .slice(0, 5)
-      .map(row => ({ key: `content-${row.id}`, type: "Content", title: row.title, reason: row.status === "revision_requested" ? "Revision feedback is waiting." : "Governance review is required.", status: row.status, action: () => setLocation(`/media/${row.id}`) })),
+      .map(row => ({ key: `content-${row.id}`, type: "Content", title: row.title, reason: row.status === "revision_requested" ? "Revision feedback is waiting." : "Governance review is required.", action: () => setLocation(`/media/${row.id}`) })),
   ].slice(0, 8);
 
   return (
