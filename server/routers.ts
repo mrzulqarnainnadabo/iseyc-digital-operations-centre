@@ -22,6 +22,7 @@ import {
 } from "./meeting/service";
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 import { approveMentorship, confirmCommunityAffiliation, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
+import { getOperationalHealth, scanOperationalAttention, summarizeAttention } from "./operations/attention";
 import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
 
 const sensitivitySchema = z.enum(["public", "internal", "confidential", "restricted", "not_recorded"]);
@@ -37,6 +38,17 @@ const fileSchema = z.object({
 const sampleMaterial = `ISEYC National Programmes Committee — Sample Review Meeting\nDate: 12 Aug 2026\nChair: Programme Director\nRecord keeper: Operations Officer\n\nAgenda\n1. Review community outreach readiness.\n2. Confirm reporting cadence.\n3. Identify implementation dependencies.\n\nDecision\nThe Committee approved a monthly readiness report beginning 30 Sep 2026, subject to each regional focal point providing source updates by the 25th of each month.\n\nAction\nRegional Focal Point — submit regional readiness update by 25 Sep 2026. Status: Open.\nOperations Officer — circulate the approved reporting template by 05 Sep 2026. Status: Open.\n\nRisk\nTwo regions have not confirmed access to the reporting template. This may delay the first reporting cycle.\n\nOpen question\nConfirm the final list of regional focal points at the next Committee meeting.`;
 
 export const appRouter = router({
+  operations: router({
+    attention: officerProcedure
+      .input(z.object({ includeTestMode: z.boolean().optional() }).optional())
+      .query(async ({ input }) => {
+        const items = await scanOperationalAttention({
+          includeTestMode: input?.includeTestMode ?? false,
+        });
+        return { items, summary: summarizeAttention(items) };
+      }),
+    health: officerProcedure.query(async () => getOperationalHealth({ includeTestMode: false })),
+  }),
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -158,14 +170,9 @@ export const appRouter = router({
       confirmAction({ actionId: input.actionId, reviewerUserId: ctx.user.id, reviewerRole: ctx.user.role }),
     ),
     configureFallback: officerAdminProcedure.mutation(async ({ ctx }) => {
-      // Legacy Manus Forge cron *registration* (Phase 6 scope). Since Supabase
-      // Auth (Phase 2) no longer issues the old app_session_id cookie, this
-      // will read as "" and createHeartbeatJob() falls back to the project
-      // owner identity — harmless, matches prior shared-resource behavior,
-      // and is fully replaced when Phase 6 migrates this to Vercel Cron.
       const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
       const job = await createHeartbeatJob({
-        name: "ise yc-meeting-fallback".replace(" ", ""),
+        name: "iseyc-meeting-fallback",
         cron: "0 */15 * * * *",
         path: "/api/scheduled/meeting-fallback",
         description: "ISEYC Meeting & Decision Tracker fallback scan for eligible live submissions.",
