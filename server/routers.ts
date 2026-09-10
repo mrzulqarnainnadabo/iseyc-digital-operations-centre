@@ -23,6 +23,7 @@ import {
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 import { approveMentorship, confirmCommunityAffiliation, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
 import { getDevelopmentJourney } from "./development/journey";
+import { archiveJourneySnapshotToNotion, isNotionSecondaryEnabled } from "./integrations/notionSecondary";
 import { getOperationalHealth, scanOperationalAttention, summarizeAttention } from "./operations/attention";
 import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
 
@@ -57,6 +58,19 @@ export const appRouter = router({
   development: router({
     myProfile: protectedProcedure.query(({ ctx }) => getMyDevelopmentProfile(ctx.user.id)),
     journey: protectedProcedure.query(({ ctx }) => getDevelopmentJourney(ctx.user.id)),
+    archiveJourneyToNotion: protectedProcedure.mutation(async ({ ctx }) => {
+      const journey = await getDevelopmentJourney(ctx.user.id);
+      const memberKey =
+        (ctx.user.name || ctx.user.email || `user-${ctx.user.id}`).slice(0, 120);
+      return archiveJourneySnapshotToNotion({
+        userId: ctx.user.id,
+        memberKey,
+        journey,
+      });
+    }),
+    notionSecondaryStatus: protectedProcedure.query(() => ({
+      enabled: isNotionSecondaryEnabled(),
+    })),
     topology: protectedProcedure.query(() => getCommunityTopology()),
     updateMyProfile: protectedProcedure.input(z.object({
       consentStatus: z.enum(["not_requested", "active", "withdrawn"]),
