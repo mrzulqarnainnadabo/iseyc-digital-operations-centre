@@ -33,7 +33,9 @@ function parseDueDate(raw: string | null | undefined): Date | null {
   const trimmed = raw.trim();
   const iso = Date.parse(trimmed);
   if (!Number.isNaN(iso)) return new Date(iso);
-  const human = Date.parse(trimmed.replace(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/, "$2 $1, $3"));
+  const human = Date.parse(
+    trimmed.replace(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/, "$2 $1, $3")
+  );
   if (!Number.isNaN(human)) return new Date(human);
   return null;
 }
@@ -113,7 +115,8 @@ export function evaluateActionItemAttention(
           recordKind: "meeting_action_item",
           recordId: action.id,
           title,
-          reason: "Action remains in draft confirmation status and is not yet institutional.",
+          reason:
+            "Action remains in draft confirmation status and is not yet institutional.",
           recommendedAction: "confirm",
           destination: dest,
           isTestMode,
@@ -193,7 +196,9 @@ export function evaluateSubmissionAttention(
           recordKind: "meeting_submission",
           recordId: submission.id,
           title,
-          reason: submission.statusReason || "Meeting record is blocked and requires human intervention.",
+          reason:
+            submission.statusReason ||
+            "Meeting record is blocked and requires human intervention.",
           recommendedAction: "investigate",
           destination: dest,
           isTestMode: submission.isTestMode,
@@ -208,12 +213,17 @@ export function evaluateSubmissionAttention(
       item(
         {
           id: `submission-${submission.id}-review`,
-          type: submission.status === "needs_human_review" ? "governance_review" : "awaiting_review",
+          type:
+            submission.status === "needs_human_review"
+              ? "governance_review"
+              : "awaiting_review",
           severity: submission.status === "needs_human_review" ? "high" : "medium",
           recordKind: "meeting_submission",
           recordId: submission.id,
           title,
-          reason: submission.statusReason || `Record status is "${submission.status}" and awaits human review.`,
+          reason:
+            submission.statusReason ||
+            `Record status is "${submission.status}" and awaits human review.`,
           recommendedAction: "review",
           destination: dest,
           isTestMode: submission.isTestMode,
@@ -272,7 +282,9 @@ export function evaluateBriefAttention(
           recordKind: "command_brief",
           recordId: brief.id,
           title: `Command Brief #${brief.id}`,
-          reason: brief.statusReason || "Command Brief draft requires human review before institutional use.",
+          reason:
+            brief.statusReason ||
+            "Command Brief draft requires human review before institutional use.",
           recommendedAction: "review",
           destination: "/command-brief",
           isTestMode: brief.isTestMode,
@@ -291,7 +303,8 @@ export function evaluateBriefAttention(
           recordKind: "command_brief",
           recordId: brief.id,
           title: `Command Brief #${brief.id}`,
-          reason: brief.statusReason || "Command Brief withheld pending governance review.",
+          reason:
+            brief.statusReason || "Command Brief withheld pending governance review.",
           recommendedAction: "investigate",
           destination: "/command-brief",
           isTestMode: brief.isTestMode,
@@ -327,14 +340,23 @@ export async function scanOperationalAttention(
   const db = await getDb();
   if (!db) return [];
 
-  const submissions = includeTestMode
-    ? await db.select().from(meetingSubmissions).orderBy(desc(meetingSubmissions.updatedAt)).limit(200)
+  let submissions = includeTestMode
+    ? await db
+        .select()
+        .from(meetingSubmissions)
+        .orderBy(desc(meetingSubmissions.updatedAt))
+        .limit(200)
     : await db
         .select()
         .from(meetingSubmissions)
         .where(eq(meetingSubmissions.isTestMode, false))
         .orderBy(desc(meetingSubmissions.updatedAt))
         .limit(200);
+
+  // Non-admin officers only see attention derived from submissions they own.
+  if (user.role !== "admin") {
+    submissions = submissions.filter(s => s.submittedByUserId === user.id);
+  }
 
   const submissionMap = new Map(submissions.map(s => [s.id, s]));
   const items: AttentionItem[] = [];
@@ -378,7 +400,11 @@ export async function scanOperationalAttention(
 
   if (user.docRole === "national_president" || user.role === "admin") {
     const briefs = includeTestMode
-      ? await db.select().from(commandBriefRuns).orderBy(desc(commandBriefRuns.createdAt)).limit(50)
+      ? await db
+          .select()
+          .from(commandBriefRuns)
+          .orderBy(desc(commandBriefRuns.createdAt))
+          .limit(50)
       : await db
           .select()
           .from(commandBriefRuns)
@@ -405,13 +431,17 @@ export async function scanOperationalAttention(
   return sortAttention(items);
 }
 
-export function summarizeAttention(items: AttentionItem[]): OperationalHealthSummary["operational"] {
+export function summarizeAttention(
+  items: AttentionItem[]
+): OperationalHealthSummary["operational"] {
   return {
     attentionCount: items.length,
     criticalCount: items.filter(i => i.severity === "critical").length,
     highCount: items.filter(i => i.severity === "high").length,
     overdueActionCount: items.filter(i => i.type === "overdue_action").length,
-    awaitingReviewCount: items.filter(i => i.type === "awaiting_review" || i.type === "governance_review").length,
+    awaitingReviewCount: items.filter(
+      i => i.type === "awaiting_review" || i.type === "governance_review"
+    ).length,
     blockedCount: items.filter(i => i.type === "blocked").length,
   };
 }
