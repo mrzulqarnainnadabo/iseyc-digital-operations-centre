@@ -1,8 +1,3 @@
-/**
- * API-only Express app (no Vite / static client).
- * Used by Vercel serverless entry so the bundle never touches vite/rollup/lightningcss.
- */
-import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -11,6 +6,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { cronAuth } from "./sdk";
 import { isRegisteredFallbackTask, processDueSubmissions } from "../meeting/service";
+import { getDb } from "../db";
 
 export async function createApiApp() {
   const app = express();
@@ -30,6 +26,29 @@ export async function createApiApp() {
   });
 
   registerStorageProxy(app);
+
+  app.get("/api/health", async (_req, res) => {
+    let dbStatus: "ok" | "down" = "down";
+    try {
+      const db = await getDb();
+      if (db) {
+        dbStatus = "ok";
+      }
+    } catch {
+      dbStatus = "down";
+    }
+
+    const isOk = dbStatus === "ok";
+    return res.status(isOk ? 200 : 503).json({
+      status: isOk ? "ok" : "degraded",
+      service: "iseyc-digital-operations-centre",
+      application: {
+        api: "ok",
+        database: dbStatus,
+      },
+      generatedAt: new Date().toISOString(),
+    });
+  });
 
   app.post("/api/scheduled/meeting-fallback", async (req, res) => {
     try {
