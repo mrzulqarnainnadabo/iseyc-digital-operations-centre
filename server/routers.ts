@@ -22,6 +22,7 @@ import {
 } from "./meeting/service";
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 import { approveMentorship, confirmCommunityAffiliation, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
+import { getDevelopmentJourney } from "./development/journey";
 import { getOperationalHealth, scanOperationalAttention, summarizeAttention } from "./operations/attention";
 import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
 
@@ -55,6 +56,7 @@ export const appRouter = router({
   }),
   development: router({
     myProfile: protectedProcedure.query(({ ctx }) => getMyDevelopmentProfile(ctx.user.id)),
+    journey: protectedProcedure.query(({ ctx }) => getDevelopmentJourney(ctx.user.id)),
     topology: protectedProcedure.query(() => getCommunityTopology()),
     updateMyProfile: protectedProcedure.input(z.object({
       consentStatus: z.enum(["not_requested", "active", "withdrawn"]),
