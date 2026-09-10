@@ -11,7 +11,17 @@ import "./index.css";
 // Keep an in-memory access token so tRPC headers never race with localStorage.
 initAuthTokenListener();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Eco / efficiency: fewer background refetches, less battery + network
+      staleTime: 45_000,
+      gcTime: 10 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
@@ -33,7 +43,6 @@ const trpcClient = trpc.createClient({
       async headers() {
         const token = await resolveAccessToken();
         if (!token) {
-          // Visible in browser DevTools Network + Console when token is missing
           console.warn("[tRPC] No Supabase access token available for this request");
           return {};
         }
