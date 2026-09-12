@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#022c22"/>
+  <rect width="1200" height="14" fill="#d97706"/>
+  <rect y="616" width="1200" height="14" fill="#d97706"/>
+  <circle cx="1100" cy="80" r="180" fill="#064e3b"/>
+  <circle cx="80" cy="560" r="140" fill="#064e3b"/>
+  <text x="80" y="200" font-family="Georgia, serif" font-size="72" fill="#ecfdf5" font-weight="700">ISEYC</text>
+  <text x="80" y="270" font-family="system-ui, sans-serif" font-size="36" fill="#ffffff">Digital Operations Centre</text>
+  <text x="80" y="340" font-family="system-ui, sans-serif" font-size="28" fill="#fef3c7">Empowering Youth, Shaping Communities.</text>
+  <text x="80" y="400" font-family="system-ui, sans-serif" font-size="22" fill="#a7f3d0">Non-Partisan · Youth-Led · Systems-Focused</text>
+  <text x="80" y="520" font-family="system-ui, sans-serif" font-size="20" fill="#6ee7b7">Institutional access for ISEYC officers</text>
+</svg>
