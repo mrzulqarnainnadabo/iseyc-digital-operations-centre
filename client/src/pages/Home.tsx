@@ -2,8 +2,14 @@ import { PageHeading } from "@/components/PageHeading";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  CIVIC_BRAIN_PURPOSE,
+  CIVIC_BRAIN_URL,
+  CIVIC_MANDATE_PURPOSE,
+  CIVIC_MANDATE_URL,
+} from "@/lib/institutionalLinks";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, FilePlus2, ShieldCheck, TimerReset } from "lucide-react";
+import { ArrowRight, ExternalLink, FilePlus2, ShieldCheck, TimerReset } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -19,6 +25,24 @@ export default function Home() {
     <section className="overflow-hidden rounded-3xl bg-slate-950 px-7 py-8 text-slate-50 shadow-[0_30px_80px_-45px_rgba(15,23,42,.9)] sm:px-9"><div className="grid gap-8 lg:grid-cols-[1.15fr_.85fr]"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-300">Institutional record control</p><h2 className="mt-4 max-w-2xl font-serif text-3xl leading-tight sm:text-4xl">Every record begins as evidence-linked draft work.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">The authoritative ISEYC Meeting & Decision Tracker prompt is used for drafting. It does not approve records, assign people, confirm actions, or close commitments.</p><div className="mt-6 flex flex-wrap gap-3"><Button onClick={() => setLocation("/queue")} className="bg-emerald-400 text-slate-950 hover:bg-emerald-300">Review live queue <ArrowRight className="ml-2 h-4 w-4" /></Button><Button variant="outline" onClick={() => setLocation("/test-mode")} className="border-slate-600 bg-transparent text-slate-100 hover:bg-slate-800 hover:text-white">Run isolated test</Button></div></div><div className="grid grid-cols-2 gap-3"><Stat label="Live submissions" value={items.length} /><Stat label="Review required" value={awaitingReview.length} /><div className="col-span-2 rounded-2xl border border-slate-700 bg-white/5 p-4"><p className="text-xs font-semibold uppercase tracking-[.12em] text-slate-400">Consolidation window</p><p className="mt-2 text-lg font-medium">{settings.data?.consolidationMinutes || 12} minutes</p><p className="mt-1 text-xs leading-5 text-slate-400">Related materials are grouped before drafting begins.</p></div></div></div></section>
     <div className="mt-7 grid gap-7 lg:grid-cols-[1.2fr_.8fr]"><section className="rounded-2xl border border-slate-200 bg-white p-6"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Attention queue</p><h2 className="mt-1 font-serif text-2xl text-slate-950">Items requiring review</h2></div><Button variant="ghost" onClick={() => setLocation("/queue")}>View all <ArrowRight className="ml-1 h-4 w-4" /></Button></div><div className="mt-5 divide-y divide-slate-100">{awaitingReview.length ? awaitingReview.slice(0, 4).map(item => <button key={item.id} onClick={() => setLocation(`/review/${item.id}`)} className="flex w-full items-center justify-between gap-4 py-4 text-left"><div className="min-w-0"><p className="truncate font-medium text-slate-900">{item.meetingTitle}</p><p className="mt-1 text-xs text-slate-500">{item.statusReason || "Draft requires human review."}</p></div><StatusPill status={item.status} /></button>) : <p className="py-10 text-center text-sm text-slate-500">No live record currently requires review.</p>}</div></section>
       <aside className="rounded-2xl border border-slate-200 bg-white p-6"><div className="flex items-start gap-3"><span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><ShieldCheck className="h-4 w-4" /></span><div><h2 className="font-serif text-2xl text-slate-950">Automation control</h2><p className="mt-1 text-sm leading-6 text-slate-500">The scheduled fallback checks only live submissions that are eligible for processing.</p></div></div><div className="mt-5 rounded-xl bg-slate-50 p-4"><div className="flex items-center gap-2 text-sm font-medium text-slate-800"><TimerReset className="h-4 w-4 text-emerald-700" />Fallback status</div><p className="mt-2 text-sm text-slate-600">{fallback.data?.enabled ? "Configured for a 15-minute control scan." : "Prepared but not configured."}</p>{user?.role === "admin" ? <Button size="sm" variant="outline" onClick={() => configureFallback.mutate()} disabled={configureFallback.isPending || fallback.data?.enabled} className="mt-4">{configureFallback.isPending ? "Configuring…" : fallback.data?.enabled ? "Fallback configured" : "Configure after deployment"}</Button> : null}{configureFallback.error ? <p className="mt-3 text-xs text-rose-700">{configureFallback.error.message}</p> : null}</div></aside></div>
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_-45px_rgba(15,23,42,.45)]">
+        <h2 className="font-serif text-xl text-slate-900">Civic systems (separate applications)</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          These open verified external products. This Hub does not share login sessions with them and does not load their private data.
+        </p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <a href={CIVIC_MANDATE_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 transition hover:border-emerald-400">
+            <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">ISEYC 2027 Civic Mandate <ExternalLink className="h-3.5 w-3.5 text-emerald-700" /></p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">{CIVIC_MANDATE_PURPOSE}</p>
+            <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-400">External application</p>
+          </a>
+          <a href={CIVIC_BRAIN_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-slate-400">
+            <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">ISEYC Civic Brain <ExternalLink className="h-3.5 w-3.5 text-slate-600" /></p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">{CIVIC_BRAIN_PURPOSE}</p>
+            <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-400">External application</p>
+          </a>
+        </div>
+      </section>
   </div>;
 }
 function Stat({ label, value }: { label: string; value: number }) { return <div className="rounded-2xl border border-slate-700 bg-white/5 p-4"><p className="text-xs font-semibold uppercase tracking-[.12em] text-slate-400">{label}</p><p className="mt-2 font-serif text-4xl">{value}</p></div>; }
