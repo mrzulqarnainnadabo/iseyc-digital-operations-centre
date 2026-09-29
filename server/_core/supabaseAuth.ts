@@ -120,13 +120,20 @@ export async function authenticateSupabaseRequest(req: Request): Promise<User> {
   }
 
   try {
+    // Refresh lastSignedIn and re-apply owner bootstrap when OWNER_AUTH_USER_ID matches.
+    // upsertUser promotes configured owner to national_president/admin even if the row already exists.
     await db.upsertUser({
       authUserId: user.authUserId,
       lastSignedIn: signedInAt,
     });
   } catch (error) {
-    console.warn("[Auth] Failed to update lastSignedIn:", String(error));
+    console.warn("[Auth] Failed to update lastSignedIn / owner bootstrap:", String(error));
   }
 
-  return user;
+  // Re-read after upsert so role/docRole/isAuthorizedOfficer reflect DB (not a stale first-session row).
+  const refreshed = await db.getUserByAuthUserId(claims.sub);
+  if (!refreshed) {
+    throw ForbiddenError("User not found");
+  }
+  return refreshed;
 }

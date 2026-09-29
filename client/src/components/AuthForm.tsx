@@ -93,7 +93,7 @@ export function AuthForm() {
               setError(null);
               setNotice(null);
             }}
-            className={`rounded-lg py-2 text-sm font-medium transition ${
+            className={`min-h-[44px] rounded-lg py-2 text-sm font-medium transition ${
               mode === "sign_up" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
             }`}
           >
@@ -106,7 +106,7 @@ export function AuthForm() {
               setError(null);
               setNotice(null);
             }}
-            className={`rounded-lg py-2 text-sm font-medium transition ${
+            className={`min-h-[44px] rounded-lg py-2 text-sm font-medium transition ${
               mode === "sign_in" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
             }`}
           >
@@ -125,6 +125,7 @@ export function AuthForm() {
           value={email}
           onChange={e => setEmail(e.target.value)}
           placeholder="you@email.com"
+          className="min-h-[48px]"
         />
       </div>
       {mode !== "reset_password" ? (
@@ -139,6 +140,7 @@ export function AuthForm() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="At least 6 characters"
+            className="min-h-[48px]"
           />
           {mode === "sign_up" ? (
             <p className="text-[11px] text-slate-400">Minimum 6 characters. You can change this later.</p>
@@ -153,7 +155,7 @@ export function AuthForm() {
         type="submit"
         size="lg"
         disabled={pending}
-        className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
+        className="min-h-[52px] w-full bg-emerald-700 text-white hover:bg-emerald-800"
       >
         {pending
           ? "Please wait…"
@@ -163,6 +165,10 @@ export function AuthForm() {
               ? "Create free account"
               : "Send reset link"}
       </Button>
+
+      <p className="text-[11px] leading-relaxed text-slate-500">
+        Operational modules open after an authorised officer role is assigned. New accounts stay limited until then.
+      </p>
 
       <div className="flex items-center justify-between text-xs text-slate-500">
         {mode === "reset_password" ? (
