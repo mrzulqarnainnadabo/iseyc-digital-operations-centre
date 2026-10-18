@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AuthForm } from "./AuthForm";
 import { ISEYC_LOGO_SRC, ISEYC_TAGLINE } from "@/lib/branding";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
+import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Inbox, Landmark, ListChecks, LogOut, Network, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -12,8 +12,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 const ISEYC_LOGO = ISEYC_LOGO_SRC;
-type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean };
+type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Command Centre" | "Executive" | "Development" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean };
 const menuItems: MenuItem[] = [
+  { icon: Network, label: "Org structure", path: "/command-centre", group: "Command Centre" },
+  { icon: Inbox, label: "Approval queue", path: "/command-centre/approval-queue", group: "Command Centre" },
   { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
   { icon: UserRound, label: "My development", path: "/development", group: "Development" },
   { icon: ClipboardCheck, label: "Continuity & contribution", path: "/development-continuity", group: "Development" },
@@ -121,7 +123,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
   const visible = menuItems.filter(
     item => (!item.nationalPresidentOnly || user?.docRole === "national_president") && (!item.adminOnly || user?.role === "admin")
   );
-  const active = menuItems.find(item => item.path === location)?.label || "Digital Operations Centre";
+  const active = menuItems.find(item => item.path === location || (item.path !== "/" && location.startsWith(item.path)))?.label || "Digital Operations Centre";
   const docRoleLabel = (user?.docRole || "officer").replaceAll("_", " ");
   return (
     <>
@@ -144,7 +146,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
             </div>
           </SidebarHeader>
           <SidebarContent className="!bg-slate-950 pt-5">
-            {["Executive", "Development", "Operating records", "Communications", "Governance"].map(group => {
+            {["Command Centre", "Executive", "Development", "Operating records", "Communications", "Governance"].map(group => {
               const groupItems = visible.filter(item => item.group === group);
               if (!groupItems.length) return null;
               return (
@@ -154,7 +156,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
                     {groupItems.map(item => (
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton
-                          isActive={location === item.path}
+                          isActive={location === item.path || (item.path !== "/" && location.startsWith(item.path))}
                           onClick={() => setLocation(item.path)}
                           tooltip={item.label}
                           className="h-11 text-slate-300 hover:bg-slate-800 hover:text-white data-[active=true]:bg-emerald-400 data-[active=true]:text-slate-950"
