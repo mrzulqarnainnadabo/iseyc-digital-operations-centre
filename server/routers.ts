@@ -23,6 +23,7 @@ import {
 import { createCommandBrief, createContentDraft, generateCommandBrief, generateContentDraft, getCommandBrief, getCommandBriefs, getContentDraft, getContentQueue, getDocOverview, loadSampleContent, reviewCommandBrief, reviewContentDraft } from "./doc/service";
 import { approveMentorship, confirmCommunityAffiliation, confirmParticipation, confirmParticipationRecord, createGrowthPlan, getCommunityTopology, getDevelopmentGovernanceQueue, getMyDevelopmentProfile, recordMentorshipCheckIn, requestMentorship, submitParticipation, updateMyDevelopmentProfile, verifyNationalPresidentAccess } from "./development/service";
 import { addChamberParticipant, createChamberSession, getChamberSessionDetail, listChamberDirectory, listChamberSessions, requestChamberDocumentIntelligence, requestChamberTrackerDraft, reviewChamberDocumentIntelligence, setParticipantAdmission, transitionChamberSession, uploadChamberDocument } from "./chamber/service";
+import { institutionalRouter } from "./institutional/router";
 
 const sensitivitySchema = z.enum(["public", "internal", "confidential", "restricted", "not_recorded"]);
 const documentTypeSchema = z.enum(["agenda", "minutes", "notes", "transcript", "decision_log", "action_list", "other"]);
@@ -158,11 +159,6 @@ export const appRouter = router({
       confirmAction({ actionId: input.actionId, reviewerUserId: ctx.user.id, reviewerRole: ctx.user.role }),
     ),
     configureFallback: officerAdminProcedure.mutation(async ({ ctx }) => {
-      // Legacy Manus Forge cron *registration* (Phase 6 scope). Since Supabase
-      // Auth (Phase 2) no longer issues the old app_session_id cookie, this
-      // will read as "" and createHeartbeatJob() falls back to the project
-      // owner identity — harmless, matches prior shared-resource behavior,
-      // and is fully replaced when Phase 6 migrates this to Vercel Cron.
       const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
       const job = await createHeartbeatJob({
         name: "ise yc-meeting-fallback".replace(" ", ""),
@@ -181,6 +177,7 @@ export const appRouter = router({
       setDocRole({ ...input, actorUserId: ctx.user.id }),
     ),
   }),
+  institutional: institutionalRouter,
   doc: router({
     overview: officerProcedure.query(() => getDocOverview()),
     commandBriefs: nationalPresidentProcedure.input(z.object({ isTestMode: z.boolean().default(false) })).query(({ input }) => getCommandBriefs(input.isTestMode)),
