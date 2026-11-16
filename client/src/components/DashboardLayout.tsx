@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { AuthForm } from "./AuthForm";
 import { ISEYC_LOGO_SRC, ISEYC_TAGLINE } from "@/lib/branding";
+import { CIVIC_BRAIN_URL, CIVIC_MANDATE_URL } from "@/lib/institutionalLinks";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
@@ -12,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 const ISEYC_LOGO = ISEYC_LOGO_SRC;
-type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean };
+type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Civic systems" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean; externalHref?: string };
 const menuItems: MenuItem[] = [
   { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
   { icon: UserRound, label: "My development", path: "/development", group: "Development" },
@@ -24,6 +25,8 @@ const menuItems: MenuItem[] = [
   { icon: ListChecks, label: "Action register", path: "/actions", group: "Operating records" },
   { icon: Beaker, label: "Controlled test mode", path: "/test-mode", group: "Operating records" },
   { icon: FilePenLine, label: "Media & Content Command", path: "/media", group: "Communications" },
+  { icon: Landmark, label: "2027 Civic Mandate", path: "/external/civic-mandate", group: "Civic systems", externalHref: CIVIC_MANDATE_URL },
+  { icon: Waypoints, label: "Civic Brain", path: "/external/civic-brain", group: "Civic systems", externalHref: CIVIC_BRAIN_URL },
   { icon: UsersRound, label: "Officer access", path: "/officer-access", group: "Governance", adminOnly: true },
   { icon: ShieldCheck, label: "Development review", path: "/development-governance", group: "Governance", adminOnly: true },
 ];
@@ -63,6 +66,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title="ISEYC Digital Operations Centre"
         description="Your account is signed in. An ISEYC administrator must confirm your institutional role before operational modules open."
       >
+        <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs leading-relaxed text-slate-600">
+          <strong className="font-semibold text-slate-800">National President:</strong> set{" "}
+          <code className="rounded bg-white px-1">OWNER_AUTH_USER_ID</code> in the deployment environment to your
+          Supabase Auth user UUID, redeploy, then sign out and sign in again. See{" "}
+          <span className="font-medium">docs/FOUNDER_ACCESS.md</span>. Do not put that UUID in Git or public chat.
+        </p>
         <Button onClick={logout} size="lg" className="mt-7 w-full bg-slate-950 text-white hover:bg-slate-800">
           Sign out
         </Button>
@@ -144,7 +153,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
             </div>
           </SidebarHeader>
           <SidebarContent className="!bg-slate-950 pt-5">
-            {["Executive", "Development", "Operating records", "Communications", "Governance"].map(group => {
+            {["Executive", "Development", "Civic systems", "Operating records", "Communications", "Governance"].map(group => {
               const groupItems = visible.filter(item => item.group === group);
               if (!groupItems.length) return null;
               return (
@@ -155,7 +164,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton
                           isActive={location === item.path}
-                          onClick={() => setLocation(item.path)}
+                          onClick={() => { if (item.externalHref) { window.open(item.externalHref, "_blank", "noopener,noreferrer"); return; } setLocation(item.path); }}
                           tooltip={item.label}
                           className="h-11 text-slate-300 hover:bg-slate-800 hover:text-white data-[active=true]:bg-emerald-400 data-[active=true]:text-slate-950"
                         >

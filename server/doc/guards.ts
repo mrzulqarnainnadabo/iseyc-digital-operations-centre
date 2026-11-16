@@ -22,3 +22,14 @@ export function mediaDraftStatusFor(sourceApprovalStatus: "approved_external" | 
   if (sourceApprovalStatus !== "approved_external") return "source_pending_approval";
   return "draft_ready";
 }
+
+/** True only when OWNER_AUTH_USER_ID is a non-empty UUID-like value matching the authenticated sub. */
+export function isConfiguredOwnerAuthUserId(
+  authUserId: string | null | undefined,
+  ownerAuthUserId: string | null | undefined
+): boolean {
+  if (!authUserId || !ownerAuthUserId) return false;
+  const owner = ownerAuthUserId.trim();
+  if (owner.length < 32) return false;
+  return authUserId === owner;
+}

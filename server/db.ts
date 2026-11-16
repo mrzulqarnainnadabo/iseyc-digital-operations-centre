@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { developmentalProfiles, InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { isConfiguredOwnerAuthUserId } from "./doc/guards";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -102,7 +103,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.authUserId === ENV.ownerAuthUserId) {
+    } else if (isConfiguredOwnerAuthUserId(user.authUserId, ENV.ownerAuthUserId)) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
@@ -110,7 +111,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.isAuthorizedOfficer !== undefined) {
       values.isAuthorizedOfficer = user.isAuthorizedOfficer;
       updateSet.isAuthorizedOfficer = user.isAuthorizedOfficer;
-    } else if (user.authUserId === ENV.ownerAuthUserId) {
+    } else if (isConfiguredOwnerAuthUserId(user.authUserId, ENV.ownerAuthUserId)) {
       values.isAuthorizedOfficer = true;
       updateSet.isAuthorizedOfficer = true;
     }
@@ -118,7 +119,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.docRole !== undefined) {
       values.docRole = user.docRole;
       updateSet.docRole = user.docRole;
-    } else if (user.authUserId === ENV.ownerAuthUserId) {
+    } else if (isConfiguredOwnerAuthUserId(user.authUserId, ENV.ownerAuthUserId)) {
       values.docRole = "national_president";
       updateSet.docRole = "national_president";
     }
