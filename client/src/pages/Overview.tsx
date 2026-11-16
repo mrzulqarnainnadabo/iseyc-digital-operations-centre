@@ -4,10 +4,10 @@ import { ArrowRight, BookOpen, HeartPulse, Laptop, Landmark } from "lucide-react
 import { useLocation } from "wouter";
 
 const departments = [
-  { name: "Education & Capacity Building", description: "Education, learning, skills and institutional capacity.", icon: BookOpen },
-  { name: "Health & Well-being", description: "Health awareness, well-being and community health priorities.", icon: HeartPulse },
-  { name: "Software & Technology", description: "Digital systems, responsible technology and technical capability.", icon: Laptop },
-  { name: "Civic Department", description: "Civic participation, public accountability and community priorities.", icon: Landmark },
+  { name: "Education & Capacity Building", description: "Education, learning, skills and institutional capacity.", icon: BookOpen, slug: "education-capacity-building" },
+  { name: "Health & Well-being", description: "Health awareness, well-being and community health priorities.", icon: HeartPulse, slug: "health-well-being" },
+  { name: "Software & Technology", description: "Digital systems, responsible technology and technical capability.", icon: Laptop, slug: "software-technology" },
+  { name: "Civic Department", description: "Civic participation, public accountability and community priorities.", icon: Landmark, slug: "civic-department" },
 ];
 
 const workspaces = [
@@ -38,7 +38,7 @@ export default function Overview() {
           {departments.map(department => {
             const Icon = department.icon;
             return (
-              <article key={department.name} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <button key={department.name} onClick={() => setLocation(`/departments/${department.slug}`)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/30">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-800"><Icon className="h-5 w-5" /></span>
                 <h3 className="mt-4 font-semibold leading-6 text-slate-950">{department.name}</h3>
                 <p className="mt-2 min-h-12 text-sm leading-5 text-slate-600">{department.description}</p>
