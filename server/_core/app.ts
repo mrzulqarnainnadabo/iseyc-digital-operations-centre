@@ -1,8 +1,3 @@
-/**
- * API-only Express app (no Vite / static client).
- * Used by Vercel serverless entry so the bundle never touches vite/rollup/lightningcss.
- */
-import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -30,6 +25,26 @@ export async function createApiApp() {
   });
 
   registerStorageProxy(app);
+
+  app.get("/api/health", async (_req, res) => {
+    try {
+      const { getOperationalHealth } = await import("../operations/attention");
+      const health = await getOperationalHealth({ includeTestMode: false });
+      const ok = health.application.database !== "down";
+      return res.status(ok ? 200 : 503).json({
+        status: ok ? "ok" : "degraded",
+        service: "iseyc-digital-operations-centre",
+        ...health,
+      });
+    } catch (error) {
+      return res.status(503).json({
+        status: "down",
+        service: "iseyc-digital-operations-centre",
+        error: error instanceof Error ? error.message : "health check failed",
+        generatedAt: new Date().toISOString(),
+      });
+    }
+  });
 
   app.post("/api/scheduled/meeting-fallback", async (req, res) => {
     try {
