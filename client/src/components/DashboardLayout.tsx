@@ -13,9 +13,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 const ISEYC_LOGO = ISEYC_LOGO_SRC;
-type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Civic systems" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean; externalHref?: string };
+type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Institution" | "Executive" | "Development" | "Civic systems" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean; externalHref?: string };
 const menuItems: MenuItem[] = [
-  { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
+  { icon: Building2, label: "Institutional overview", path: "/", group: "Institution" },
+  { icon: Landmark, label: "Command Brief", path: "/command-brief", group: "Executive", nationalPresidentOnly: true },
   { icon: UserRound, label: "My development", path: "/development", group: "Development" },
   { icon: ClipboardCheck, label: "Continuity & contribution", path: "/development-continuity", group: "Development" },
   { icon: Waypoints, label: "Community intelligence", path: "/community-intelligence", group: "Development" },
@@ -153,7 +154,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
             </div>
           </SidebarHeader>
           <SidebarContent className="!bg-slate-950 pt-5">
-            {["Executive", "Development", "Civic systems", "Operating records", "Communications", "Governance"].map(group => {
+            {["Institution", "Executive", "Development", "Civic systems", "Operating records", "Communications", "Governance"].map(group => {
               const groupItems = visible.filter(item => item.group === group);
               if (!groupItems.length) return null;
               return (
