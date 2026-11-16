@@ -43,7 +43,7 @@ export default function Overview() {
                 <h3 className="mt-4 font-semibold leading-6 text-slate-950">{department.name}</h3>
                 <p className="mt-2 min-h-12 text-sm leading-5 text-slate-600">{department.description}</p>
                 <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Department workspace structure · operational records not connected here</p>
-              </article>
+              </button>
             );
           })}
         </div>
