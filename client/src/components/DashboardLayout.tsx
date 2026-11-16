@@ -5,7 +5,7 @@ import { AuthForm } from "./AuthForm";
 import { ISEYC_LOGO_SRC, ISEYC_TAGLINE } from "@/lib/branding";
 import { CIVIC_BRAIN_URL, CIVIC_MANDATE_URL } from "@/lib/institutionalLinks";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Beaker, Building2, ClipboardCheck, FilePenLine, FilePlus2, Landmark, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
+import { Beaker, BookOpen, Building2, ClipboardCheck, FilePenLine, FilePlus2, HeartPulse, Landmark, Laptop, ListChecks, LogOut, PanelLeft, ShieldCheck, UsersRound, UserRound, Waypoints } from "lucide-react";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -13,9 +13,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 const ISEYC_LOGO = ISEYC_LOGO_SRC;
-type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Executive" | "Development" | "Civic systems" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean; externalHref?: string };
+type MenuItem = { icon: typeof Landmark; label: string; path: string; group: "Institution" | "Departments" | "Executive" | "Development" | "Civic systems" | "Operating records" | "Communications" | "Governance"; nationalPresidentOnly?: boolean; adminOnly?: boolean; externalHref?: string };
 const menuItems: MenuItem[] = [
-  { icon: Landmark, label: "Command Brief", path: "/", group: "Executive", nationalPresidentOnly: true },
+  { icon: Building2, label: "Institutional overview", path: "/", group: "Institution" },
+  { icon: BookOpen, label: "Education & Capacity Building", path: "/departments/education-capacity-building", group: "Departments" },
+  { icon: HeartPulse, label: "Health & Well-being", path: "/departments/health-well-being", group: "Departments" },
+  { icon: Laptop, label: "Software & Technology", path: "/departments/software-technology", group: "Departments" },
+  { icon: Landmark, label: "Civic Department", path: "/departments/civic-department", group: "Departments" },
+  { icon: Landmark, label: "Command Brief", path: "/command-brief", group: "Executive", nationalPresidentOnly: true },
   { icon: UserRound, label: "My development", path: "/development", group: "Development" },
   { icon: ClipboardCheck, label: "Continuity & contribution", path: "/development-continuity", group: "Development" },
   { icon: Waypoints, label: "Community intelligence", path: "/community-intelligence", group: "Development" },
@@ -153,7 +158,7 @@ function LayoutContent({ children, setSidebarWidth }: { children: React.ReactNod
             </div>
           </SidebarHeader>
           <SidebarContent className="!bg-slate-950 pt-5">
-            {["Executive", "Development", "Civic systems", "Operating records", "Communications", "Governance"].map(group => {
+            {["Institution", "Departments", "Executive", "Development", "Civic systems", "Operating records", "Communications", "Governance"].map(group => {
               const groupItems = visible.filter(item => item.group === group);
               if (!groupItems.length) return null;
               return (
